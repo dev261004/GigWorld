@@ -1,9 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "dev"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
   },
   "repository": {
     "type": "git",
@@ -23,10 +25,13 @@
   "description": "",
   "dependencies": {
     "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.4.4"
+    "mongoose": "^8.4.4",
+    "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.4",
