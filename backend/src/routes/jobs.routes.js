@@ -1,6 +1,6 @@
 import { Router } from "express";
 const router = Router();
-import { getAllJobs,getJobById,createJob,updateJob,deleteJob } from "../controllers/jobs.controller.js";
+import { getAllJobs,getJobById,createJob,updateJob,deleteJob,searchJobsByKeyword } from "../controllers/jobs.controller.js";
 
 // Get all jobs
 router.post('/',getAllJobs);
@@ -19,5 +19,8 @@ router.route("/updateJob/:id").put(updateJob);
 
 //delete job
 router.route('/deleteJob/:id').delete(deleteJob)
+
+// Search jobs by keyword
+router.get('/search', searchJobsByKeyword);
 
 export default router

@@ -78,11 +78,34 @@ const deleteJob = async (req, res) => {
     }
 };
 
+// Search jobs by keyword
+const searchJobsByKeyword = asyncHandler(async (req, res) => {
+    const { keyword } = req.query;
+  
+    if (!keyword) {   
+        throw new ApiError(400,"Please provide a keyword to search")      
+    }
+  
+    // Perform the search on job_title, min_requirements, and tech_stack fields
+    const jobs = await Job.find({
+      $or: [
+        { job_title: { $regex: keyword, $options: 'i' } },
+        { min_requirements: { $regex: keyword, $options: 'i' } },
+        { tech_stack: { $regex: keyword, $options: 'i' } }
+      ]
+    });
+  
+    if (jobs.length === 0) {
+      return res.status(404).json(new ApiResponse(400, "No jobs found matching the keyword." ));
+    }
+    return res.status(200).json(new ApiResponse(200,jobs, "found the job" ));
+  });
 export {
     getAllJobs,
     getJobById,
     createJob,
     updateJob,
-    deleteJob
+    deleteJob,
+    searchJobsByKeyword
     
 }
