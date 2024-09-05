@@ -5,6 +5,8 @@ import SignupForm from "./components/Signup/SignupForm"
 import DashboardPage from "./pages/DashboardPage/DashboardPage"
 import PricingPage from "./pages/PricingPage/PricingPage"
 import ContactPage from "./pages/ContactPage/ContactPage"
+import WorkSearchPage from "./pages/WorkSearchPage/WorkSearchPage"
+import ProfilePage from "./pages/ProfilePage/ProfilePage"
 
 
 function App() {
@@ -19,6 +21,8 @@ function App() {
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/contact" element={<ContactPage />} />
+    <Route path="/work" element={<WorkSearchPage />} />
+    <Route path="/profile" element={<ProfilePage />} />
     </Routes>
     </BrowserRouter>
     </div>

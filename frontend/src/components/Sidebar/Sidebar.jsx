@@ -1,9 +1,12 @@
+import { Link } from "react-router-dom";
+
 const Sidebar = () => {
     return (
         <div className="h-screen">
-  <div className="my-4 flex h-5/6 w-72 flex-col rounded-tr-2xl rounded-br-2xl bg-gray-200">
+  <div className="flex h-screen flex-col rounded-tr-2xl rounded-br-2xl bg-gray-200">
     <ul className="mt-12 flex flex-col">
       <li className="relative transition">
+      <Link to="/dashboard">
         <input
           className="peer hidden"
           type="checkbox"
@@ -62,26 +65,7 @@ const Sidebar = () => {
                 />
               </svg>
             </span>
-            Carnival
-          </li>
-          <li className="m-2 flex cursor-pointer rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-white">
-            <span className="mr-5">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-            </span>
-            Analytics
+            Stats
           </li>
           <li className="m-2 flex cursor-pointer rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-white">
             <span className="mr-5">
@@ -103,107 +87,10 @@ const Sidebar = () => {
             Revenue
           </li>
         </ul>
+        </Link>
       </li>
       <li className="relative transition">
-        <input className="peer hidden" type="checkbox" id="menu-2" />
-        <div className="relative m-2 flex items-center rounded-xl border-b-4 border-gray-300 bg-gray-50 py-3 pl-5 text-sm text-gray-500">
-          <span className="mr-5 flex w-5 text-gray-500">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M16 8v8m-4-5v5m-4-2v2m-2 4h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-              />
-            </svg>
-          </span>
-          Analytics
-          <label
-            htmlFor="menu-2"
-            className="absolute inset-0 h-full w-full cursor-pointer"
-          />
-        </div>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="peer-checked:rotate-180 absolute right-0 top-6 mr-5 ml-auto h-4 text-gray-500 transition"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-        <ul className="duration-400 peer-checked:max-h-96 m-2 flex max-h-0 flex-col overflow-hidden rounded-2xl bg-gray-100 transition-all duration-300">
-          <li className="m-2 flex cursor-pointer rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-white">
-            <span className="mr-5">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                />
-              </svg>
-            </span>
-            Carnival
-          </li>
-          <li className="m-2 flex cursor-pointer rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-white">
-            <span className="mr-5">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-            </span>
-            Analytics
-          </li>
-          <li className="m-2 flex cursor-pointer rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-white">
-            <span className="mr-5">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-            </span>
-            Revenue
-          </li>
-        </ul>
-      </li>
-      <li className="relative transition">
+        <Link to="/work" >
         <div className="relative m-2 flex cursor-pointer items-center rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-gray-50">
           <span className="mr-5 flex w-5 text-gray-500">
             <svg
@@ -221,10 +108,12 @@ const Sidebar = () => {
               />
             </svg>
           </span>
-          Support Tickets
+          Search For work
         </div>
+        </Link>
       </li>
       <li className="relative transition">
+        <Link to="/profile">
         <div className="relative m-2 flex cursor-pointer items-center rounded-xl py-3 pl-5 text-sm text-gray-500 hover:bg-gray-50">
           <span className="mr-5 flex w-5 text-gray-500">
             <svg
@@ -247,8 +136,9 @@ const Sidebar = () => {
               />
             </svg>
           </span>
-          Settings
+          Profile
         </div>
+        </Link>
       </li>
     </ul>
   </div>
