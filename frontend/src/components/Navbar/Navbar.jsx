@@ -39,28 +39,28 @@ const Navbar = () => {
       >
         <ul className="flex w-full flex-col items-center space-y-2 lg:flex-row lg:justify-center lg:space-y-0">
           <li className="lg:mr-12">
-            <a
+            <Link
               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-              href="#"
+              to="/"
             >
-              Components
-            </a>
+              Home
+            </Link>
           </li>
           <li className="lg:mr-12">
-            <a
+            <Link
               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-              href="#"
+              to="/pricing"
             >
               Pricing
-            </a>
+            </Link>
           </li>
           <li className="lg:mr-12">
-            <a
+            <Link
               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-              href="#"
+              to="/contact"
             >
               Contact
-            </a>
+            </Link>
           </li>
           <li className="lg:mr-12">
             <a

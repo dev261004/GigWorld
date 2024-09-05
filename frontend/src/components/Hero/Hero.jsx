@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const Hero = () => {
   return (
@@ -31,13 +32,13 @@ const Hero = () => {
         You have just discoverd the perfect place to find you next freelance gig or find the perfect freelancer to get the job done.
       </p>
       <div className="group relative mt-10 inline-flex">
-        <a
-          href="#"
+        <Link
+          to="/signin"
           title=""
           className="rounded-xl bg-blue-700 px-10 py-3 font-medium text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 hover:bg-blue-600"
         >
           Get Started
-        </a>
+        </Link>
         <div className="-scale-x-100 absolute left-0 -bottom-10 hidden h-10 w-10 -rotate-12 text-blue-600 md:inline-flex">
           <svg
             viewBox="0 0 82 35"
