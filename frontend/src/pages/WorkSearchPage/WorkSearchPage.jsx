@@ -19,9 +19,10 @@ const WorkSearchPage = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/getAllJobs");
-        setJobs(res.data);
-        setFilteredJobs(res.data);
+        const res = await axios.post("http://localhost:2610/api/v1/jobs/");
+        console.log(res.data.data);
+        setJobs(res.data.data);
+        setFilteredJobs(res.data.data);
       } catch (error) {
         console.error(error);
       }
