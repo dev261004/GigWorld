@@ -1,10 +1,7 @@
 import Footer from "../../components/Footer/Footer";
 import Hero from "../../components/Hero/Hero";
 import Navbar from "../../components/Navbar/Navbar";
-import SigninForm from "../../components/Signin/SigninForm";
 
-import React from 'react'
-import SignupForm from "../../components/Signup/SignupForm";
 import SourceSites from "../../components/SourceSites/SourceSites";
 import Contributors from "../../components/Contributors/Contributors";
 

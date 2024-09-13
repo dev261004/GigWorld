@@ -14,7 +14,7 @@ const Contact = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Send the form data via POST request to the API
-    fetch('http://localhost:8000/submit', {
+    fetch('http://localhost:2610/api/v1/contact/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
