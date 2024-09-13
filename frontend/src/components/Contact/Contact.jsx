@@ -24,6 +24,7 @@ const Contact = () => {
       .then((response) => response.json())
       .then((data) => {
         // Handle the response from the API
+        alert("Our Customer Care Will Contact Soon ")
         console.log(data);
       })
       .catch((error) => {
