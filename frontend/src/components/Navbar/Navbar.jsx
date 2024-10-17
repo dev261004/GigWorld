@@ -76,7 +76,7 @@ const Navbar = () => {
           <Link
             to="/signin"
             title=""
-            className="whitespace-nowrap rounded font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2 hover:text-opacity-50"
+            className={"whitespace-nowrap rounded font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2 hover:text-opacity-50 "}
           >
             {" "}Sign in{" "}
           </Link>
