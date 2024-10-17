@@ -1,12 +1,12 @@
 import Homepage from "./pages/Homepage/Homepage"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import SigninPage from "./pages/SigninPage/SigninPage"
-import SignupForm from "./components/Signup/SignupForm"
 import DashboardPage from "./pages/DashboardPage/DashboardPage"
 import PricingPage from "./pages/PricingPage/PricingPage"
 import ContactPage from "./pages/ContactPage/ContactPage"
 import WorkSearchPage from "./pages/WorkSearchPage/WorkSearchPage"
 import ProfilePage from "./pages/ProfilePage/ProfilePage"
+import SignupPage from "./pages/SignupPage/SignupPage"
 
 
 function App() {
@@ -17,7 +17,7 @@ function App() {
     <Routes>
     <Route path="/" element={<Homepage />} />
     <Route path="/signin" element={<SigninPage />} />
-    <Route path="/signup" element={<SignupForm />} />
+    <Route path="/signup" element={<SignupPage />} />
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/contact" element={<ContactPage />} />

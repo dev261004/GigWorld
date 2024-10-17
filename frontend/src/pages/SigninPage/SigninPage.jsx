@@ -10,7 +10,7 @@ const SigninPage = () => {
     e.preventDefault();
 
     try {
-      const response = await fetch("http://localhost:8000/login", {
+      const response = await fetch("http://localhost:2610/api/v1/users/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

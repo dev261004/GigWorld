@@ -14,7 +14,7 @@ const Contact = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Send the form data via POST request to the API
-    fetch('http://localhost:8000/submit', {
+    fetch('http://localhost:2610/api/v1/contact/submit', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -24,6 +24,7 @@ const Contact = () => {
       .then((response) => response.json())
       .then((data) => {
         // Handle the response from the API
+        alert("Our Customer Care Will Contact Soon ")
         console.log(data);
       })
       .catch((error) => {
