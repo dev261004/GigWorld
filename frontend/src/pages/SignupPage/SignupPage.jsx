@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -118,6 +118,7 @@ const SignupPage = () => {
             </button>
           </div>
         </form>
+        <Link to="/signin" className="py-5 text-blue-700">Already have an account? Signin</Link>
       </div>
     </div>
   );
