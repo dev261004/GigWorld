@@ -4,7 +4,6 @@ import {ApiError} from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 
-
 // Register a new company
 const registerCompany = asyncHandler(async (req, res) => {
     const { company_name, location, industry, website, contact_info, company_mail } = req.body;

@@ -19,11 +19,22 @@ const SigninPage = () => {
       });
 
       if (response.ok) {
-        // Signin successful, redirect or perform any other action
-        console.log("Signin successful");
-        navigate("/dashboard");
+        const data = await response.json();
+        //console.log(data.data.accessToken);
+       const token =data.data.accessToken;
+      //  console.log(token);
+        // Assuming the token is sent in the response as 'token'
+        if (token) {
+          // Store the token in localStorage
+          localStorage.setItem("authToken", token);
+
+          // Redirect to dashboard
+          console.log("Signin successful");
+          navigate("/dashboard");
+        } else {
+          console.log("No token received");
+        }
       } else {
-        // Signin failed, handle the error
         console.log("Signin failed");
       }
     } catch (error) {
@@ -101,9 +112,7 @@ const SigninPage = () => {
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
-              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                
-              </span>
+              <span className="absolute left-0 inset-y-0 flex items-center pl-3"></span>
               Sign in
             </button>
           </div>

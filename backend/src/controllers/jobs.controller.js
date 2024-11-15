@@ -5,11 +5,33 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 
 // Get all jobs
 const getAllJobs = asyncHandler(async(req, res) => {
+    // try {
+    //     const jobs = await Job.find();
+    //    return res.status(200).json(new ApiResponse(200,jobs,"getting all jobs"));
+    // } catch (err) {
+    //  throw new ApiError(500,'Something went wong while getting all jobs');
+    // }
+    const { searchKeyword, filters, page, perPage } = req.body;
+    const { location, experience, techStack, rating, min_requirements } = filters;
+    
+    const filterConditions = {
+      ...(searchKeyword && { job_title: { $regex: searchKeyword, $options: 'i' } }),
+      ...(location && { location: { $regex: location, $options: 'i' } }),
+      ...(experience && { experience: { $regex: experience, $options: 'i' } }),
+      ...(techStack && { tech_stack: { $in: [techStack] } }),
+      ...(rating && { rating: { $gte: parseFloat(rating) } }),
+      ...(min_requirements && { min_requirements: { $regex: min_requirements, $options: 'i' } })
+    };
+  
     try {
-        const jobs = await Job.find();
-       return res.status(200).json(new ApiResponse(200,jobs,"getting all jobs"));
-    } catch (err) {
-     throw new ApiError(500,'Something went wong while getting all jobs');
+      const jobs = await Job.find(filterConditions)
+        .skip((page - 1) * perPage)
+        .limit(perPage);
+  
+      const totalJobs = await Job.countDocuments(filterConditions);
+      res.json({ data: jobs, totalJobs });
+    } catch (error) {
+      res.status(500).json({ error: "Server Error" });
     }
 });
 
@@ -100,6 +122,7 @@ const searchJobsByKeyword = asyncHandler(async (req, res) => {
     }
     return res.status(200).json(new ApiResponse(200,jobs, "found the job" ));
   });
+  
 export {
     getAllJobs,
     getJobById,

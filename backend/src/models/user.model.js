@@ -7,7 +7,7 @@ const userSchema = new Schema(
         username: {
             type: String,
             required:true,
-            unique: true,
+            unique: true,   
             lowercase: true,
             trim: true, 
             index: true
@@ -32,7 +32,9 @@ const userSchema = new Schema(
         },
         refreshToken: {
             type: String
-        }
+        },
+        resetPasswordToken: {type:String},
+  resetPasswordExpires: {type:Date},
 
     },
     {

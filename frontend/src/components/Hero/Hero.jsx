@@ -1,7 +1,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useState,useEffect } from "react";
 
 const Hero = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Check if the user is logged in (you can store the user token or authentication state in localStorage)
+  useEffect(() => {
+    const token = localStorage.getItem("authToken"); // Or use a context or Redux state
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
   return (
     <div className="relative py-12 sm:py-16 lg:pt-20 xl:pb-0">
   <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -32,13 +42,19 @@ const Hero = () => {
         You have just discoverd the perfect place to find you next freelance gig or find the perfect freelancer to get the job done.
       </p>
       <div className="group relative mt-10 inline-flex">
-        <Link
+      {isAuthenticated ?(
+        <Link to="/dashboard" 
+        title=""
+        className="rounded-xl bg-blue-700 px-10 py-3 font-medium text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 hover:bg-blue-600"
+      >
+        Get Started</Link>
+      ): (<Link
           to="/signin"
           title=""
           className="rounded-xl bg-blue-700 px-10 py-3 font-medium text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 hover:bg-blue-600"
         >
           Get Started
-        </Link>
+        </Link>)}
         <div className="-scale-x-100 absolute left-0 -bottom-10 hidden h-10 w-10 -rotate-12 text-blue-600 md:inline-flex">
           <svg
             viewBox="0 0 82 35"
