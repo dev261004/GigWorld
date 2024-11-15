@@ -113,11 +113,13 @@
 // };
 
 // export default ApplyJobPage;
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect, } from "react";
+import {  useNavigate,useParams } from "react-router-dom";
+
 import axios from "axios";
 
 const ApplyJobPage = () => {
+  const navigate = useNavigate();
   const { jobId } = useParams(); // Get jobId from URL
   const [job, setJob] = useState(null);
   const [formData, setFormData] = useState({
@@ -165,9 +167,16 @@ const ApplyJobPage = () => {
     formDataToSubmit.append("resume", formData.resume);
 
     try {
-      const res = await axios.post(`http://localhost:2610/api/v1/jobs/apply`, formDataToSubmit);
+      const token = localStorage.getItem("authToken");
+      const res = await axios.post(`http://localhost:2610/api/v1/jobs/apply/${jobId}`, formDataToSubmit, {
+        headers: {
+          "Authorization": `Bearer ${token}`, // Include the token in the request headers
+          "Content-Type": "multipart/form-data"
+        }
+      });
       
       alert(res.data.message);
+      navigate("/dashboard")
     } catch (error) {
       console.error(error);
       alert("Error applying for the job");

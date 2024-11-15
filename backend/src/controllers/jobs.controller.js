@@ -39,11 +39,11 @@ const getAllJobs = asyncHandler(async(req, res) => {
 const getJobById =asyncHandler( async (req, res) => {
     try {
         const jobId = req.params.id;
-        console.log(`Looking for job with ID: ${jobId}`);
+       // console.log(`Looking for job with ID: ${jobId}`);
 
        
         const job = await Job.findById(jobId);
-        console.log(`Query result: ${job}`);
+      //  console.log(`Query result: ${job}`);
         if (!job) {
             console.error(`Job with ID ${jobId} not found`);
             throw new ApiError(404,"job not found");

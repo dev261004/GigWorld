@@ -1,13 +1,15 @@
-import { jobApplicationStatus } from "../models/JobApplicationStatus.model.js";
+
+import { JobApplication } from  "../models/jobApplication.model.js";
 
 
 const getUserJobApplications = async (req, res) => {
   try {
-    const userId = req.user.id; // Assuming user ID is available in `req.user` after authentication
-    const applications = await jobApplicationStatus.find({ user: userId })
-      .populate("job", "job_title company_name location") // Populate job details
+    const userId = req.user.id;
+    console.log("userId",userId) // Assuming user ID is available in `req.user` after authentication
+    const applications = await JobApplication.find({ userId: userId })
+      .populate("jobId", "job_title company_name location") // Populate job details
       .sort({ appliedAt: -1 });
-
+console.log("applications",applications)
     res.status(200).json({
       success: true,
       data: applications,

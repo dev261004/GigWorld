@@ -17,7 +17,12 @@ const UpdateAccountDetailsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put("http://localhost:2610/api/v1/users/update-account", formData);
+      const token = localStorage.getItem("authToken");
+      const response = await axios.put("http://localhost:2610/api/v1/users/update-account", formData,{
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       setMessage(response.data.message);
       setError("");
     } catch (err) {

@@ -2,6 +2,7 @@ import { Router } from "express";
 import multer, { diskStorage } from "multer";
 import { extname } from "path";
 import { applyJob } from "../controllers/jobApplication.controller.js";
+import { verifyJWT } from "../middlewares/auth.js";
 
 const router = Router();
 
@@ -17,6 +18,6 @@ const storage = diskStorage({
 const upload = multer({ storage });
 
 // POST route to apply for the job
-router.post("/apply", upload.single("resume"), applyJob);
+router.post("/apply/:jobId",  verifyJWT,upload.single("resume"),applyJob);
 
 export default router;
