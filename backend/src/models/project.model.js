@@ -21,9 +21,9 @@ const ProjectSchema = new Schema({
             required: true
         }
     ],
-    projectLink: {
-        type: String,
-        default: null
+    project: {
+        type: Schema.Types.ObjectId,
+            ref: 'Project'
     },
     createdAt: {
         type: Date,

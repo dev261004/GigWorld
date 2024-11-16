@@ -13,6 +13,9 @@ import ApplyJobPage from './pages/ApplyJobPage/ApplyJobPage'
 import UserProfilePage from "./pages/UserProfilePage/UserProfilePage"
 import UpdateAccountDetailsPage from "./pages/UpdateAccountDetailPage/UpdateAccountDetailPage"
 import JobApplicationStatusPage from "./pages/JobApplicationStatusPage/JobApplicationStatusPage"
+import ProjectPage from "./pages/ProjectPage/ProjectPage"
+import PortfolioPage from "./pages/PortfolioPage/PortfolioPage"
+
 
 function App() {
 
@@ -30,6 +33,8 @@ function App() {
     <Route path="/apply-job/:jobId" element={<ApplyJobPage />} />
     <Route path="/job-application-status" element={<JobApplicationStatusPage />} />
     <Route path="/profile" element={<UserProfilePage/>} />
+    <Route path="/projects" element={<ProjectPage/>} />
+    <Route path="/portfolio" element={<PortfolioPage/>} />
     <Route path="/update-account" element={<UpdateAccountDetailsPage/>} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

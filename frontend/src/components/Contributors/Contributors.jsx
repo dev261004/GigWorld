@@ -11,7 +11,7 @@ const Contributors = () => {
         <article className="mx-auto my-4 flex w-full flex-col overflow-hidden rounded-2xl border border-gray-300 bg-white text-gray-900 transition hover:translate-y-2 hover:shadow-lg">
           <a href="#">
             <img
-              src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8MTZ8fHBhcnRuZXJzaGlwfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60"
+              src="https://res.cloudinary.com/dsz5koczi/image/upload/v1731729313/qovnl2ha9zanmun04y0w.jpg"
               className="h-56 w-full object-cover"
               alt=""
             />
@@ -31,7 +31,7 @@ const Contributors = () => {
         <article className="mx-auto my-4 flex w-full flex-col overflow-hidden rounded-2xl border border-gray-300 bg-white text-gray-900 transition hover:translate-y-2 hover:shadow-lg">
           <a href="#">
             <img
-              src="https://images.unsplash.com/photo-1594122230689-45899d9e6f69?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YXdhcmRzfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60"
+              src="https://res.cloudinary.com/dsz5koczi/image/upload/v1731729464/zgoltyj8yfcsjeacasug.jpg"
               className="h-56 w-full object-cover"
               alt=""
             />
@@ -51,7 +51,7 @@ const Contributors = () => {
         <article className="mx-auto my-4 flex w-full flex-col overflow-hidden rounded-2xl border border-gray-300 bg-white text-gray-900 transition hover:translate-y-2 hover:shadow-lg">
           <a href="#">
             <img
-              src="https://images.unsplash.com/photo-1569705460033-cfaa4bf9f822?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Nnx8YXdhcmRzfGVufDB8fDB8fA%3D%3D&auto=format&fit=crop&w=500&q=60"
+              src="https://res.cloudinary.com/dsz5koczi/image/upload/v1731729470/bpidcfrsbvc0mbwr1yek.jpg"
               className="h-56 w-full object-cover"
               alt=""
             />
@@ -62,15 +62,18 @@ const Contributors = () => {
               <p className="mb-4 text-base font-light">
                 Research and operations
               </p>
-              <span className="inline-block cursor-pointer select-none rounded-full border border-gray-80 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
+              <span className="inline-block cursor-pointer select-none rounded-full border border-gray-800 bg-gray-800 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
+                Learn More
+              </span>
+              {/* <span className="inline-block cursor-pointer select-none rounded-full border border-gray-80 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
                 <a href="#"><i class="bx bxl-facebook-square"></i></a>
-              </span>
-              <span className="inline-block cursor-pointer select-none rounded-full border border-gray-800 bg-gray-800 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
+              </span> */}
+              {/* <span className="inline-block cursor-pointer select-none rounded-full border border-gray-800 bg-gray-800 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
                 <a href="#"></a>
-              </span>
-              <span className="inline-block cursor-pointer select-none rounded-full border border-gray-800 bg-gray-800 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
+              </span> */}
+              {/* <span className="inline-block cursor-pointer select-none rounded-full border border-gray-800 bg-gray-800 px-2 py-1 text-center align-middle text-sm font-semibold leading-normal text-white no-underline shadow-sm">
                 <a href="#"></a>
-              </span>
+              </span> */}
             </div>
           </a>
         </article>

@@ -48,6 +48,12 @@ const UserProfilePage = () => {
           <li>
             <Link to="/job-application-status" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Job Application Status</Link>
           </li>
+          <li>
+            <Link to="/projects" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Projects</Link>
+          </li>
+          <li>
+            <Link to="/portfolio" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Portfolio</Link>
+          </li>
         </ul>
     <br></br>
         <button className="block w-full text-left py-2 px-4 bg-red-500 hover:bg-red-400 rounded transition duration-200 ease-in-out" onClick={() => { /* logout logic */ }}>Logout</button>

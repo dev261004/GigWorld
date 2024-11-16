@@ -20,10 +20,7 @@ const Pricing = () => {
       <div className="md:flex lg:w-1/4 md:flex-col px-5">
         <div className="w-full flex-grow text-left">
           <h1 className="mb-5 text-4xl font-bold">Pricing</h1>
-          <h3 className="text-md mb-5 font-medium">
-            Lorem ipsum dolor sit amet consectetur adipisicing elit repellat
-            dignissimos
-          </h3>
+          
         </div>
         <div className="mb-2 w-full">
           <p className="text-xs">*Please read the terms.</p>
@@ -35,7 +32,7 @@ const Pricing = () => {
             <div className="w-full flex-grow">
               <h2 className="mb-4 text-center font-bold uppercase">PERSONAL</h2>
               <h3 className="mb-5 text-center text-4xl font-bold">
-                $25<span className="text-sm">/mo</span>
+                ₹125<span className="text-sm">/mo</span>
               </h3>
               <ul className="mb-8 text-sm">
                 <li className="flex items-center leading-tight">
@@ -84,7 +81,7 @@ const Pricing = () => {
             <div className="w-full flex-grow">
               <h2 className="mb-4 text-center font-bold uppercase">TEAM</h2>
               <h3 className="mb-5 text-center text-4xl font-bold md:text-5xl">
-                $75<span className="text-sm">/mo</span>
+                ₹175<span className="text-sm">/mo</span>
               </h3>
               <ul className="mb-8 text-sm">
                 <li className="flex items-center leading-tight">
@@ -184,7 +181,7 @@ const Pricing = () => {
             <div className="w-full flex-grow">
               <h2 className="mb-4 text-center font-bold uppercase">PRO</h2>
               <h3 className="mb-5 text-center text-4xl font-bold">
-                $250<span className="text-sm">/mo</span>
+                ₹250<span className="text-sm">/mo</span>
               </h3>
               <ul className="mb-8 text-sm">
                 <li className="flex items-center leading-tight">

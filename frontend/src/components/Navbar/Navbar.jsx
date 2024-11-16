@@ -117,12 +117,12 @@ const Navbar = () => {
 
   return (
     <header className="text-slate-700 container relative mx-auto flex flex-col overflow-hidden px-4 py-4 lg:flex-row lg:items-center">
-      <a href="#" className="flex items-center whitespace-nowrap text-2xl font-black">
+      <Link to="/" className="flex items-center whitespace-nowrap text-2xl font-black">
         <span className="mr-2 w-8">
           <img src="/images/JOJj79gp_Djhwdp_ZOKLL.png" alt="" />
         </span>
         Work Hive
-      </a>
+      </Link>
       <input type="checkbox" className="peer hidden" id="navbar-open" />
       <label className="absolute top-5 right-5 cursor-pointer lg:hidden" htmlFor="navbar-open">
         <svg className="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -134,7 +134,7 @@ const Navbar = () => {
           <li className="lg:mr-12"><Link className="rounded text-gray-700" to="/">Home</Link></li>
           <li className="lg:mr-12"><Link className="rounded text-gray-700" to="/pricing">Pricing</Link></li>
           <li className="lg:mr-12"><Link className="rounded text-gray-700" to="/contact">Contact</Link></li>
-          <li className="lg:mr-12"><a className="rounded text-gray-700" href="#">FAQ</a></li>
+         
         </ul>
         <div className="my-4 flex items-center space-x-6 space-y-2 lg:my-0 lg:ml-auto lg:space-x-8 lg:space-y-0">
           {isAuthenticated ? (
