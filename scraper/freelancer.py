@@ -1,7 +1,7 @@
 from bs4 import BeautifulSoup
 import urllib.request
 import re
-import pymongo  # To interact with MongoDB
+import pymongo  
 import sys
 
 # Load the webpage
