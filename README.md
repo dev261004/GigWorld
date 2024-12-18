@@ -1,7 +1,7 @@
 
-# WorkHive - Freelancing Platform
+# "GigWorld - Your One-Stop Destination for Freelancers"
 
-WorkHive is a freelancing platform that aggregates job listings from various freelancing websites using web scraping. It allows companies to post job listings and freelancers to browse and apply for jobs.
+GigWorld is a comprehensive platform tailored for freelancers seeking work opportunities. This project aggregates freelancing job listings scraped from multiple popular freelancing websites, providing a centralized and efficient job-search solution. With its user-friendly interface and powerful backend, GigWorld ensures freelancers can access a wide range of gigs in one place.
 
 ## Table of Contents
 
