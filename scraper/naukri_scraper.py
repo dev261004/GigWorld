@@ -14,8 +14,8 @@ from pymongo import MongoClient
 
 
 # MongoDB connection setup
-client = MongoClient("mongodb+srv://devagrawal261004:6CreQkfi3lXZiCbq@cluster0.h1ovfru.mongodb.net/workhive_db?retryWrites=true&w=majority")
-db = client["workhive_db"]
+client = MongoClient("mongodb+srv://agrawaldev31997:4iTDn26AZlvFKtN1@gigworld.ugv43.mongodb.net/Gigworld?retryWrites=true&w=majority")
+db = client["Gigworld"]
 collection = db["jobs"]
 
 website = """
