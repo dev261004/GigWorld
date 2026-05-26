@@ -116,3 +116,33 @@ Notes:
 - The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
 - It upserts by Twine listing ID, so reruns update existing rows.
 - Twine currently exposes one public listing set per page URL.
+
+## DesignCrowd
+
+The DesignCrowd scraper reads public open design jobs from
+`https://www.designcrowd.com/jobs/`, parses listing cards, and upserts records
+into MongoDB.
+
+Preview data without writing to MongoDB:
+
+```bash
+python scraper/designcrowd.py --pages 1 --limit 5 --dry-run
+```
+
+Write parsed jobs to MongoDB:
+
+```bash
+python scraper/designcrowd.py --pages 2 --delay 5
+```
+
+Scrape a category page:
+
+```bash
+python scraper/designcrowd.py --url https://www.designcrowd.com/jobs/open/corporateidentity/ --limit 5 --dry-run
+```
+
+Notes:
+
+- The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
+- It upserts by DesignCrowd job ID, so reruns update existing rows.
+- Private listings are stored only with the public metadata shown on the jobs page.

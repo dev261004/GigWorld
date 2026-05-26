@@ -1,0 +1,483 @@
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import random
+import re
+import sys
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
+from html import unescape
+from pathlib import Path
+from time import sleep
+from typing import Iterable
+from urllib.parse import unquote, urljoin, urlparse
+
+import requests
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from pymongo import MongoClient, UpdateOne
+from pymongo.collection import Collection
+
+
+BASE_URL = "https://www.designcrowd.com"
+JOBS_URL = f"{BASE_URL}/jobs/"
+SOURCE_WEBSITE = "designcrowd.com"
+DEFAULT_USER_AGENT = (
+    "GigWorldScraper/1.0 (+https://github.com/dev261004/GigWorld; "
+    "contact: project-owner)"
+)
+
+
+@dataclass
+class ScrapedJob:
+    job_title: str
+    company_name: str
+    rating: str
+    experience: str
+    location: str
+    min_requirements: str
+    tech_stack: list[str]
+    source: str
+    source_website: str
+    source_url: str
+    external_id: str
+    project_status: str | None
+    budget: dict[str, object]
+    proposals_count: int | None
+    designs_count: int | None
+    designers_count: int | None
+    job_type: str | None
+    labels: list[str]
+    time_remaining: str | None
+    expires_at: datetime | None
+    scraped_at: datetime
+    postedAt: datetime
+    updatedAt: datetime
+
+
+def load_environment() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    load_dotenv(repo_root / ".env")
+    load_dotenv(repo_root / "backend" / ".env")
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+
+
+def clean_text(value: object) -> str:
+    if value is None:
+        return ""
+    text = unescape(str(value))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def make_session(user_agent: str) -> requests.Session:
+    session = requests.Session()
+    session.headers.update(
+        {
+            "User-Agent": user_agent,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+    )
+    return session
+
+
+def build_page_url(page_number: int, start_url: str) -> str:
+    if page_number <= 1:
+        return start_url
+
+    normalized = start_url.rstrip("/") + "/"
+    if normalized == JOBS_URL:
+        return f"{BASE_URL}/jobs/open/{page_number}/"
+
+    if re.search(r"/jobs/open/\d+/$", normalized):
+        return re.sub(r"/jobs/open/\d+/$", f"/jobs/open/{page_number}/", normalized)
+
+    return normalized
+
+
+def fetch_page(session: requests.Session, url: str, timeout: int) -> str:
+    response = session.get(url, timeout=timeout)
+    response.raise_for_status()
+    response.encoding = "utf-8"
+    return response.text
+
+
+def parse_int(value: object) -> int | None:
+    match = re.search(r"\d+(?:,\d{3})*", clean_text(value))
+    return int(match.group(0).replace(",", "")) if match else None
+
+
+def parse_deadline(value: str | None) -> datetime | None:
+    if not value:
+        return None
+
+    text = clean_text(value)
+    text = re.sub(r"^Deadline date\s+", "", text, flags=re.IGNORECASE)
+    for fmt in ("%d-%b-%Y %I:%M:%S %p UTC", "%d-%b-%Y %H:%M:%S UTC"):
+        try:
+            parsed = datetime.strptime(text, fmt)
+        except ValueError:
+            continue
+        return parsed.replace(tzinfo=timezone.utc)
+
+    return None
+
+
+def parse_budget(raw_text: str) -> dict[str, object]:
+    raw = clean_text(raw_text)
+    if not raw:
+        return {"raw": None, "currency": None, "min": None, "max": None}
+
+    currency_map = {
+        "US$": "USD",
+        "A$": "AUD",
+        "C$": "CAD",
+        "NZ$": "NZD",
+        "S$": "SGD",
+        "£": "GBP",
+        "€": "EUR",
+        "$": "USD",
+    }
+    currency = None
+    for marker, code in currency_map.items():
+        if raw.startswith(marker) or marker in raw:
+            currency = code
+            break
+
+    numbers = [
+        float(match.replace(",", ""))
+        for match in re.findall(r"\d+(?:,\d{3})*(?:\.\d+)?", raw)
+    ]
+    amount = numbers[0] if numbers else None
+    return {
+        "raw": raw,
+        "currency": currency,
+        "min": amount,
+        "max": numbers[1] if len(numbers) > 1 else amount,
+        "is_hourly": False,
+    }
+
+
+def extract_external_id(card) -> str:
+    header = card.select_one("[data-test-job-header]")
+    if header and header.get("data-test-job-header"):
+        return clean_text(header.get("data-test-job-header"))
+
+    for attr in ("href", "data-success"):
+        for link in card.select(f"a[{attr}]"):
+            match = re.search(r"/jobs/job/(\d+)", link.get(attr, ""))
+            if match:
+                return match.group(1)
+
+    return ""
+
+
+def extract_source_url(card, external_id: str) -> str:
+    for attr in ("href", "data-success"):
+        for link in card.select(f"a[{attr}]"):
+            value = clean_text(link.get(attr))
+            if "/jobs/job/" in value:
+                return urljoin(BASE_URL, value)
+
+    return f"{BASE_URL}/jobs/job/{external_id}" if external_id else ""
+
+
+def extract_stats(card) -> dict[str, object]:
+    stats: dict[str, object] = {
+        "budget": {"raw": None, "currency": None, "min": None, "max": None},
+        "time_remaining": None,
+        "expires_at": None,
+        "designs_count": None,
+        "designers_count": None,
+    }
+
+    for item in card.select(".project-card__list li"):
+        text = clean_text(item.get_text(" ", strip=True))
+        icon = item.select_one("img[alt]")
+        icon_label = clean_text(icon.get("alt")).lower() if icon else ""
+
+        if "budget" in icon_label:
+            stats["budget"] = parse_budget(text)
+        elif "time" in icon_label:
+            stats["time_remaining"] = text or None
+            title = item.select_one("[title]")
+            stats["expires_at"] = parse_deadline(title.get("title") if title else None)
+        elif "designs" in icon_label and "designers" not in icon_label:
+            stats["designs_count"] = parse_int(text)
+        elif "designers" in icon_label:
+            stats["designers_count"] = parse_int(text)
+
+    return stats
+
+
+def extract_labels(card) -> list[str]:
+    labels = []
+    for label in card.select(".label-list .label"):
+        text = clean_text(label.get_text(" ", strip=True))
+        if text and text not in labels:
+            labels.append(text)
+    return labels
+
+
+def extract_job_type(card) -> str | None:
+    tag = card.select_one(".tag-list .tag")
+    return clean_text(tag.get_text(" ", strip=True)) if tag else None
+
+
+def parse_job_card(card, now: datetime) -> ScrapedJob | None:
+    external_id = extract_external_id(card)
+    title_link = card.select_one("[data-test-job-header]") or card.select_one("h4 a")
+    title = clean_text(title_link.get_text(" ", strip=True)) if title_link else ""
+    source_url = extract_source_url(card, external_id)
+
+    if not external_id or not title or not source_url:
+        return None
+
+    description = clean_text(
+        card.select_one(".project-card__description p").get_text(" ", strip=True)
+    ) if card.select_one(".project-card__description p") else ""
+    job_type = extract_job_type(card)
+    labels = extract_labels(card)
+    stats = extract_stats(card)
+    designs_count = stats["designs_count"]
+
+    skills = []
+    if job_type:
+        skills.append(re.sub(r"\s+Job$", "", job_type).strip())
+    for label in labels:
+        if label not in skills:
+            skills.append(label)
+
+    is_private = "private" in title.lower() or "marked as private" in description.lower()
+    experience = "Private listing" if is_private else "Design contest"
+
+    return ScrapedJob(
+        job_title=title,
+        company_name="DesignCrowd Client",
+        rating="None",
+        experience=experience,
+        location="Remote",
+        min_requirements=description or "See source listing for full requirements.",
+        tech_stack=skills,
+        source="scraped",
+        source_website=SOURCE_WEBSITE,
+        source_url=source_url,
+        external_id=external_id,
+        project_status="open",
+        budget=stats["budget"],
+        proposals_count=designs_count,
+        designs_count=designs_count,
+        designers_count=stats["designers_count"],
+        job_type=job_type,
+        labels=labels,
+        time_remaining=stats["time_remaining"],
+        expires_at=stats["expires_at"],
+        scraped_at=now,
+        postedAt=now,
+        updatedAt=now,
+    )
+
+
+def parse_jobs(html: str) -> list[ScrapedJob]:
+    soup = BeautifulSoup(html, "html.parser")
+    cards = soup.select("#jobs-list .project-card")
+    if not cards:
+        cards = soup.select(".project-card")
+
+    now = datetime.now(timezone.utc)
+    jobs: list[ScrapedJob] = []
+    seen_ids: set[str] = set()
+    for card in cards:
+        job = parse_job_card(card, now)
+        if not job or job.external_id in seen_ids:
+            continue
+        jobs.append(job)
+        seen_ids.add(job.external_id)
+    return jobs
+
+
+def resolve_db_name(mongodb_url: str | None, explicit_db_name: str | None) -> str:
+    if explicit_db_name and explicit_db_name.strip():
+        return explicit_db_name.strip()
+
+    if mongodb_url:
+        url_db_name = unquote(urlparse(mongodb_url).path.strip("/"))
+        if url_db_name:
+            return url_db_name
+
+    env_db_name = os.getenv("DB_NAME")
+    if env_db_name and env_db_name.strip():
+        return env_db_name.strip().strip("\"'")
+
+    return "Gigworld"
+
+
+def connect_collection(
+    mongodb_url: str | None, db_name: str, collection_name: str
+) -> Collection:
+    if not mongodb_url:
+        raise RuntimeError(
+            "MongoDB URL not found. Set MONGODB_URL in backend/.env or pass "
+            "--mongodb-url."
+        )
+    client = MongoClient(mongodb_url)
+    return client[db_name][collection_name]
+
+
+def upsert_jobs(collection: Collection, jobs: Iterable[ScrapedJob]) -> tuple[int, int]:
+    operations = []
+    for job in jobs:
+        doc = asdict(job)
+        operations.append(
+            UpdateOne(
+                {
+                    "source_website": SOURCE_WEBSITE,
+                    "external_id": job.external_id,
+                },
+                {
+                    "$set": doc,
+                    "$setOnInsert": {"createdAt": job.scraped_at},
+                },
+                upsert=True,
+            )
+        )
+
+    if not operations:
+        return 0, 0
+
+    result = collection.bulk_write(operations, ordered=False)
+    return result.upserted_count, result.modified_count
+
+
+def serialize_job(job: ScrapedJob) -> dict[str, object]:
+    doc = asdict(job)
+    doc["scraped_at"] = job.scraped_at.isoformat()
+    doc["postedAt"] = job.postedAt.isoformat()
+    doc["updatedAt"] = job.updatedAt.isoformat()
+    doc["expires_at"] = job.expires_at.isoformat() if job.expires_at else None
+    return doc
+
+
+def scrape(args: argparse.Namespace) -> int:
+    load_environment()
+    session = make_session(args.user_agent)
+    all_jobs: list[ScrapedJob] = []
+    seen_ids: set[str] = set()
+
+    end_page = args.start_page + args.pages
+    for page_number in range(args.start_page, end_page):
+        url = build_page_url(page_number, args.url)
+        print(f"Fetching {url}")
+        html = fetch_page(session, url, args.timeout)
+        page_jobs = parse_jobs(html)
+        print(f"Parsed {len(page_jobs)} jobs from page {page_number}")
+
+        for job in page_jobs:
+            if job.external_id in seen_ids:
+                continue
+            all_jobs.append(job)
+            seen_ids.add(job.external_id)
+
+        if args.limit and len(all_jobs) >= args.limit:
+            all_jobs = all_jobs[: args.limit]
+            break
+
+        if page_number < end_page - 1:
+            sleep(args.delay + random.uniform(0, args.jitter))
+
+    if args.dry_run:
+        print(json.dumps([serialize_job(job) for job in all_jobs], indent=2))
+        print(f"Dry run complete. Parsed {len(all_jobs)} jobs; wrote 0 records.")
+        return 0
+
+    mongodb_url = args.mongodb_url or os.getenv("MONGODB_URL") or os.getenv("MONGO_URI")
+    db_name = resolve_db_name(mongodb_url, args.db_name)
+    print(f"Writing to MongoDB database '{db_name}', collection '{args.collection}'")
+
+    collection = connect_collection(mongodb_url, db_name, args.collection)
+    inserted, updated = upsert_jobs(collection, all_jobs)
+    print(
+        f"Scrape complete. Parsed {len(all_jobs)} jobs, "
+        f"inserted {inserted}, updated {updated}."
+    )
+    return 0
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Scrape public DesignCrowd jobs into GigWorld's jobs collection."
+    )
+    parser.add_argument(
+        "--url",
+        default=JOBS_URL,
+        help="DesignCrowd jobs URL to scrape. Defaults to https://www.designcrowd.com/jobs/.",
+    )
+    parser.add_argument("--pages", type=int, default=1, help="Number of pages to scrape.")
+    parser.add_argument(
+        "--start-page",
+        type=int,
+        default=1,
+        help="DesignCrowd open jobs page to start from.",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=0, help="Maximum total jobs to keep. 0 means no cap."
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=3.0,
+        help="Base delay in seconds between page requests.",
+    )
+    parser.add_argument(
+        "--jitter",
+        type=float,
+        default=1.5,
+        help="Random extra delay in seconds between page requests.",
+    )
+    parser.add_argument("--timeout", type=int, default=20, help="Request timeout.")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print parsed jobs without writing to MongoDB.",
+    )
+    parser.add_argument("--mongodb-url", help="MongoDB connection URL.")
+    parser.add_argument(
+        "--db-name",
+        default=None,
+        help="MongoDB database name. Defaults to DB_NAME env or Gigworld.",
+    )
+    parser.add_argument("--collection", default="jobs", help="MongoDB collection name.")
+    parser.add_argument(
+        "--user-agent", default=DEFAULT_USER_AGENT, help="HTTP User-Agent header."
+    )
+    args = parser.parse_args(argv)
+
+    if args.pages < 1:
+        parser.error("--pages must be at least 1")
+    if args.start_page < 1:
+        parser.error("--start-page must be at least 1")
+    if args.limit < 0:
+        parser.error("--limit cannot be negative")
+    if args.delay < 0 or args.jitter < 0:
+        parser.error("--delay and --jitter cannot be negative")
+    return args
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        return scrape(parse_args(argv or sys.argv[1:]))
+    except requests.HTTPError as exc:
+        print(f"HTTP error while scraping DesignCrowd: {exc}", file=sys.stderr)
+        return 1
+    except requests.RequestException as exc:
+        print(f"Network error while scraping DesignCrowd: {exc}", file=sys.stderr)
+        return 1
+    except Exception as exc:
+        print(f"DesignCrowd scraper failed: {exc}", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
