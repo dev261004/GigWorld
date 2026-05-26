@@ -9,7 +9,7 @@ from time import sleep
 from random import randint
 from selenium.webdriver.chrome.service import Service
 from bs4 import BeautifulSoup
-from webdriver_manager.chrome import ChromeDriverManager
+#from webdriver_manager.chrome import ChromeDriverManager # type: ignore
 from pymongo import MongoClient
 
 
@@ -86,7 +86,8 @@ def parse_job_data_from_soup(page_jobs):
             'experience': ex_wrap,
             'location': location,
             'min_requirements': min_requirements,
-            'tech_stack': all_tech_stack
+            'tech_stack': all_tech_stack,
+            'source_website': "naukri.com"
         }
         collection.insert_one(job_data)
 

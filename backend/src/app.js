@@ -11,8 +11,8 @@ import jobApplicationStatusRouter from './routes/JobApplicationStatus.routes.js'
 
 import cors from "cors";
 import cookieParser from "cookie-parser"
-import { forgotPassword } from "./controllers/forgotPassword.controller.js";
-const  app= express();
+    
+const app= express();
 
 // Serve static files (uploaded resumes)
 app.use("/uploads", express.static("uploads"));

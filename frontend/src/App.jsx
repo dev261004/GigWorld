@@ -15,7 +15,8 @@ import UpdateAccountDetailsPage from "./pages/UpdateAccountDetailPage/UpdateAcco
 import JobApplicationStatusPage from "./pages/JobApplicationStatusPage/JobApplicationStatusPage"
 import ProjectPage from "./pages/ProjectPage/ProjectPage"
 import PortfolioPage from "./pages/PortfolioPage/PortfolioPage"
-
+import CompanyForm from "./components/Company/CompanyForm"
+import CompanyList from "./components/Company/CompanyList"
 
 function App() {
 
@@ -38,6 +39,10 @@ function App() {
     <Route path="/update-account" element={<UpdateAccountDetailsPage/>} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+    <Route path="/companies" element={<CompanyList />} />
+        <Route path="/companies/new" element={<CompanyForm isEdit={false} />} />
+        <Route path="/companies/:id/edit" element={<CompanyForm isEdit={true} />} />
+
 
 
 
