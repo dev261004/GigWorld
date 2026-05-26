@@ -183,3 +183,73 @@ Notes:
 - The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
 - It upserts by Remotive job ID, so reruns update existing rows.
 - Keep Remotive attribution and link users back with the stored `source_url`.
+
+## RemoteOK API
+
+The RemoteOK scraper reads jobs from the public RemoteOK API at
+`https://remoteok.com/api`, skips the API metadata row, normalizes each job into
+the backend `Job` shape, and upserts records into MongoDB.
+
+Preview data without writing to MongoDB:
+
+```bash
+python scraper/remoteok.py --limit 5 --dry-run
+```
+
+Search or filter locally:
+
+```bash
+python scraper/remoteok.py --search python --limit 5 --dry-run
+python scraper/remoteok.py --tag react --limit 5 --dry-run
+python scraper/remoteok.py --company "A.Team" --limit 5 --dry-run
+```
+
+Write parsed jobs to MongoDB:
+
+```bash
+python scraper/remoteok.py --limit 25
+```
+
+Notes:
+
+- The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
+- It upserts by RemoteOK job ID, so reruns update existing rows.
+- RemoteOK requires visible attribution and links back to RemoteOK job URLs.
+
+## We Work Remotely RSS
+
+The We Work Remotely scraper reads jobs from the public RSS feed at
+`https://weworkremotely.com/remote-jobs.rss`, parses each RSS item, normalizes it
+into the backend `Job` shape, and upserts records into MongoDB.
+
+Preview data without writing to MongoDB:
+
+```bash
+python scraper/weworkremotely.py --limit 5 --dry-run
+```
+
+Search or filter locally:
+
+```bash
+python scraper/weworkremotely.py --search python --limit 5 --dry-run
+python scraper/weworkremotely.py --category "Programming" --limit 5 --dry-run
+python scraper/weworkremotely.py --company "Cadastra" --limit 5 --dry-run
+```
+
+Use a category RSS feed:
+
+```bash
+python scraper/weworkremotely.py --feed-url https://weworkremotely.com/categories/remote-programming-jobs.rss --limit 5 --dry-run
+```
+
+Write parsed jobs to MongoDB:
+
+```bash
+python scraper/weworkremotely.py --limit 25
+```
+
+Notes:
+
+- The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
+- It upserts by We Work Remotely RSS GUID/job slug, so reruns update existing rows.
+- We Work Remotely asks feed users to attribute links back to We Work Remotely.
