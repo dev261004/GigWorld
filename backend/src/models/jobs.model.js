@@ -35,6 +35,32 @@ const jobSchema = new Schema(
       enum: ["scraped", "company"],
       default: "scraped",
     },
+    source_website: {
+      type: String,
+      default: "unknown",
+    },
+    source_url: {
+      type: String,
+    },
+    external_id: {
+      type: String,
+    },
+    project_status: {
+      type: String,
+    },
+    budget: {
+      raw: { type: String },
+      currency: { type: String },
+      min: { type: Number },
+      max: { type: Number },
+      is_hourly: { type: Boolean },
+    },
+    bids_count: {
+      type: Number,
+    },
+    scraped_at: {
+      type: Date,
+    },
     companyDetails: {
       description: { type: String },
       website: { type: String },
@@ -51,5 +77,7 @@ const jobSchema = new Schema(
     timestamps: true,
   }
 );
+
+jobSchema.index({ source_website: 1, external_id: 1 });
 
 export const Job = mongoose.model("Job", jobSchema);
