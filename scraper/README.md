@@ -146,3 +146,40 @@ Notes:
 - The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
 - It upserts by DesignCrowd job ID, so reruns update existing rows.
 - Private listings are stored only with the public metadata shown on the jobs page.
+
+## Remotive API
+
+The Remotive scraper reads jobs from the public Remotive API at
+`https://remotive.com/api/remote-jobs`, normalizes each API record into the
+backend `Job` shape, and upserts records into MongoDB.
+
+Preview data without writing to MongoDB:
+
+```bash
+python scraper/remotive.py --limit 5 --dry-run
+```
+
+Search jobs:
+
+```bash
+python scraper/remotive.py --search python --limit 5 --dry-run
+```
+
+Filter by category or company:
+
+```bash
+python scraper/remotive.py --category software-dev --limit 5 --dry-run
+python scraper/remotive.py --company-name "A.Team" --limit 5 --dry-run
+```
+
+Write parsed jobs to MongoDB:
+
+```bash
+python scraper/remotive.py --limit 25
+```
+
+Notes:
+
+- The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
+- It upserts by Remotive job ID, so reruns update existing rows.
+- Keep Remotive attribution and link users back with the stored `source_url`.
