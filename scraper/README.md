@@ -86,3 +86,33 @@ Notes:
 - The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
 - It upserts by Hubstaff job URL, so reruns update existing rows.
 - Use small page counts and a polite delay between requests.
+
+## Twine
+
+The Twine scraper reads the public jobs page at `https://www.twine.net/jobs`,
+extracts the embedded listing data, normalizes each job into the backend `Job`
+shape, and upserts records into MongoDB.
+
+Preview data without writing to MongoDB:
+
+```bash
+python scraper/twine.py --limit 5 --dry-run
+```
+
+Scrape a role-specific Twine page:
+
+```bash
+python scraper/twine.py --url https://www.twine.net/jobs/developers --limit 5 --dry-run
+```
+
+Write parsed jobs to MongoDB:
+
+```bash
+python scraper/twine.py --limit 25
+```
+
+Notes:
+
+- The script loads `MONGODB_URL` and `DB_NAME` from `backend/.env`.
+- It upserts by Twine listing ID, so reruns update existing rows.
+- Twine currently exposes one public listing set per page URL.
