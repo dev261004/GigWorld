@@ -20,6 +20,8 @@ from dotenv import load_dotenv
 from pymongo import MongoClient, UpdateOne
 from pymongo.collection import Collection
 
+from lifecycle import upsert_jobs_with_lifecycle, validate_sync_args
+
 
 BASE_URL = "https://www.freelancer.com"
 SOURCE_WEBSITE = "freelancer.com"
@@ -242,29 +244,12 @@ def resolve_db_name(mongodb_url: str | None, explicit_db_name: str | None) -> st
     return "Gigworld"
 
 
-def upsert_jobs(collection: Collection, jobs: Iterable[ScrapedJob]) -> tuple[int, int]:
-    operations = []
-    for job in jobs:
-        doc = asdict(job)
-        operations.append(
-            UpdateOne(
-                {
-                    "source_website": SOURCE_WEBSITE,
-                    "external_id": job.external_id,
-                },
-                {
-                    "$set": doc,
-                    "$setOnInsert": {"createdAt": job.scraped_at},
-                },
-                upsert=True,
-            )
-        )
-
-    if not operations:
-        return 0, 0
-
-    result = collection.bulk_write(operations, ordered=False)
-    return result.upserted_count, result.modified_count
+def upsert_jobs(
+    collection: Collection, jobs: Iterable[ScrapedJob], sync_lifecycle: bool
+) -> tuple[int, int, int]:
+    return upsert_jobs_with_lifecycle(
+        collection, jobs, SOURCE_WEBSITE, sync_lifecycle=sync_lifecycle
+    )
 
 
 def scrape(args: argparse.Namespace) -> int:
@@ -307,10 +292,10 @@ def scrape(args: argparse.Namespace) -> int:
     print(f"Writing to MongoDB database '{db_name}', collection '{args.collection}'")
 
     collection = connect_collection(mongodb_url, db_name, args.collection)
-    inserted, updated = upsert_jobs(collection, all_jobs)
+    inserted, updated, expired = upsert_jobs(collection, all_jobs, args.sync_lifecycle)
     print(
         f"Scrape complete. Parsed {len(all_jobs)} jobs, "
-        f"inserted {inserted}, updated {updated}."
+        f"inserted {inserted}, updated {updated}, expired {expired}."
     )
     return 0
 
@@ -344,6 +329,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Print parsed jobs without writing to MongoDB.",
     )
+    parser.add_argument(
+        "--sync-lifecycle",
+        action="store_true",
+        help="Expire old jobs from this source that are not seen in this completed run.",
+    )
     parser.add_argument("--mongodb-url", help="MongoDB connection URL.")
     parser.add_argument(
         "--db-name",
@@ -364,6 +354,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         parser.error("--start-page must be at least 1")
     if args.delay < 0 or args.jitter < 0:
         parser.error("--delay and --jitter cannot be negative")
+    validate_sync_args(parser, args)
     return args
 
 

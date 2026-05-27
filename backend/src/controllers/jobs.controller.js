@@ -3,6 +3,38 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const activeJobConditions = (now = new Date()) => ({
+  is_active: { $ne: false },
+  $and: [
+    {
+      $or: [
+        { expires_at: { $exists: false } },
+        { expires_at: null },
+        { expires_at: { $gt: now } },
+      ],
+    },
+    {
+      $or: [
+        { application_deadline: { $exists: false } },
+        { application_deadline: null },
+        { application_deadline: { $gt: now } },
+      ],
+    },
+  ],
+});
+
+const withComputedJobFlags = (job, now = new Date()) => ({
+  ...job,
+  is_new: Boolean(job.new_until && new Date(job.new_until) > now),
+});
+
+const isJobUnavailable = (job, now = new Date()) => (
+  !job ||
+  job.is_active === false ||
+  (job.expires_at && new Date(job.expires_at) <= now) ||
+  (job.application_deadline && new Date(job.application_deadline) <= now)
+);
+
 // Get all jobs
 const getAllJobs = asyncHandler(async(req, res) => {
     // try {
@@ -11,10 +43,14 @@ const getAllJobs = asyncHandler(async(req, res) => {
     // } catch (err) {
     //  throw new ApiError(500,'Something went wong while getting all jobs');
     // }
-    const { searchKeyword, filters, page, perPage } = req.body;
+    const { searchKeyword = "", filters = {}, page = 1, perPage = 10 } = req.body || {};
     const { location, experience, techStack, rating, min_requirements } = filters;
+    const now = new Date();
+    const currentPage = Math.max(Number(page) || 1, 1);
+    const pageSize = Math.max(Number(perPage) || 10, 1);
     
     const filterConditions = {
+      ...activeJobConditions(now),
       ...(searchKeyword && { job_title: { $regex: searchKeyword, $options: 'i' } }),
       ...(location && { location: { $regex: location, $options: 'i' } }),
       ...(experience && { experience: { $regex: experience, $options: 'i' } }),
@@ -25,11 +61,13 @@ const getAllJobs = asyncHandler(async(req, res) => {
   
     try {
       const jobs = await Job.find(filterConditions)
-        .skip((page - 1) * perPage)
-        .limit(perPage);
+        .sort({ postedAt: -1, createdAt: -1 })
+        .skip((currentPage - 1) * pageSize)
+        .limit(pageSize)
+        .lean();
   
       const totalJobs = await Job.countDocuments(filterConditions);
-      res.json({ data: jobs, totalJobs });
+      res.json({ data: jobs.map((job) => withComputedJobFlags(job, now)), totalJobs });
     } catch (error) {
       res.status(500).json({ error: "Server Error" });
     }
@@ -42,15 +80,21 @@ const getJobById =asyncHandler( async (req, res) => {
        // console.log(`Looking for job with ID: ${jobId}`);
 
        
-        const job = await Job.findById(jobId);
+        const job = await Job.findById(jobId).lean();
       //  console.log(`Query result: ${job}`);
         if (!job) {
             console.error(`Job with ID ${jobId} not found`);
             throw new ApiError(404,"job not found");
         }
-        return res.status(200).json(new ApiResponse(200,job,"given id job found"));
+        if (isJobUnavailable(job)) {
+            return res.status(410).json(new ApiResponse(410,null,"This gig is no longer available."));
+        }
+        return res.status(200).json(new ApiResponse(200,withComputedJobFlags(job),"given id job found"));
         //res.status(200).json(job);
     } catch (err) {
+        if (err instanceof ApiError) {
+            throw err;
+        }
         throw new ApiError(500,"error occuring to find one job");;
     }
 });
@@ -109,18 +153,20 @@ const searchJobsByKeyword = asyncHandler(async (req, res) => {
     }
   
     // Perform the search on job_title, min_requirements, and tech_stack fields
+    const now = new Date();
     const jobs = await Job.find({
+      ...activeJobConditions(now),
       $or: [
         { job_title: { $regex: keyword, $options: 'i' } },
         { min_requirements: { $regex: keyword, $options: 'i' } },
         { tech_stack: { $regex: keyword, $options: 'i' } }
       ]
-    });
+    }).lean();
   
     if (jobs.length === 0) {
       return res.status(404).json(new ApiResponse(400, "No jobs found matching the keyword." ));
     }
-    return res.status(200).json(new ApiResponse(200,jobs, "found the job" ));
+    return res.status(200).json(new ApiResponse(200,jobs.map((job) => withComputedJobFlags(job, now)), "found the job" ));
   });
   
 export {

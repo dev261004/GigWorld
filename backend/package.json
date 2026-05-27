@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
+    "scrape:worker": "node src/workers/scraper.worker.js",
+    "scrape:once": "node src/workers/scraper.worker.js --once",
+    "jobs:backfill-lifecycle": "node src/scripts/backfillJobLifecycle.js"
   },
   "repository": {
     "type": "git",

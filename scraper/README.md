@@ -1,5 +1,35 @@
 # GigWorld Scrapers
 
+## Lifecycle Sync
+
+Scrapers support lifecycle syncing so GigWorld can hide expired jobs without
+immediately deleting them from MongoDB.
+
+Run the one-time lifecycle backfill from `backend/` before enabling the worker:
+
+```bash
+npm run jobs:backfill-lifecycle
+```
+
+Run one complete scheduled scrape cycle:
+
+```bash
+npm run scrape:once
+```
+
+Start the worker that runs all active scrapers every 6 hours:
+
+```bash
+npm run scrape:worker
+```
+
+Notes:
+
+- Production sync uses `--sync-lifecycle` internally.
+- `--sync-lifecycle` cannot be combined with `--limit`.
+- Dry runs never expire old jobs.
+- Expired jobs are hidden from the frontend and deleted from MongoDB after 60 days.
+
 ## Freelancer.com
 
 The Freelancer scraper reads public job listing pages such as `/jobs` and `/jobs/2`,

@@ -61,6 +61,7 @@
 //   applyJob,
 // };
 import { JobApplication } from "../models/jobApplication.model.js";
+import { Job } from "../models/jobs.model.js";
 import { createTransport } from "nodemailer";
 
 // Controller for handling job applications
@@ -76,6 +77,19 @@ const applyJob = async (req, res) => {
   }
 
   try {
+    const job = await Job.findById(jobId).lean();
+    const now = new Date();
+    const jobUnavailable = (
+      !job ||
+      job.is_active === false ||
+      (job.expires_at && new Date(job.expires_at) <= now) ||
+      (job.application_deadline && new Date(job.application_deadline) <= now)
+    );
+
+    if (jobUnavailable) {
+      return res.status(410).json({ message: "This gig is no longer available." });
+    }
+
     // Save the application to the database
     const newApplication = new JobApplication({
       fullName,

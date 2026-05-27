@@ -122,6 +122,7 @@ const ApplyJobPage = () => {
   const navigate = useNavigate();
   const { jobId } = useParams(); // Get jobId from URL
   const [job, setJob] = useState(null);
+  const [unavailableMessage, setUnavailableMessage] = useState("");
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -138,6 +139,11 @@ const ApplyJobPage = () => {
         setJob(res.data.data);
       } catch (error) {
         console.error(error);
+        if (error.response?.status === 410) {
+          setUnavailableMessage(error.response.data?.message || "This gig is no longer available.");
+        } else {
+          setUnavailableMessage("Unable to load this gig right now.");
+        }
       }
     };
     fetchJob();
@@ -179,10 +185,24 @@ const ApplyJobPage = () => {
       navigate("/dashboard")
     } catch (error) {
       console.error(error);
-      alert("Error applying for the job");
+      if (error.response?.status === 410) {
+        setUnavailableMessage(error.response.data?.message || "This gig is no longer available.");
+      } else {
+        alert("Error applying for the job");
+      }
     }
   };
 // console.log("jobtitel:",job.job_title)
+  if (unavailableMessage) {
+    return (
+      <div className="flex flex-col w-full h-full">
+        <div className="rounded border border-red-200 bg-red-50 p-4 text-red-700">
+          {unavailableMessage}
+        </div>
+      </div>
+    );
+  }
+
   if (!job) return <div>Loading job details...</div>;
 
   return (

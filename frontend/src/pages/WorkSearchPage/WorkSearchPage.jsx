@@ -354,8 +354,15 @@ const WorkSearchPage = () => {
           {/* Job List */}
           <div>
             {jobs.map((job, index) => (
-              <div key={index} className="p-4 mb-2 border border-gray-200 rounded shadow-sm">
-                <h2 className="text-lg font-bold">{job.job_title}</h2>
+              <div key={job._id || index} className="p-4 mb-2 border border-gray-200 rounded shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <h2 className="text-lg font-bold">{job.job_title}</h2>
+                  {job.is_new && (
+                    <span className="shrink-0 rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                      New Gig
+                    </span>
+                  )}
+                </div>
                 <p className="text-sm text-gray-600">{job.company_name}</p>
                 <p className="text-sm">Location: {job.location}</p>
                 <p className="text-sm">Experience: {job.experience}</p>

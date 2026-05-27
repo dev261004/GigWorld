@@ -48,6 +48,35 @@ const jobSchema = new Schema(
     project_status: {
       type: String,
     },
+    is_active: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    first_seen_at: {
+      type: Date,
+      default: Date.now,
+    },
+    last_seen_at: {
+      type: Date,
+      default: Date.now,
+    },
+    expired_at: {
+      type: Date,
+    },
+    delete_after: {
+      type: Date,
+    },
+    new_until: {
+      type: Date,
+      default: () => new Date(Date.now() + 48 * 60 * 60 * 1000),
+    },
+    last_scrape_run_id: {
+      type: String,
+    },
+    expires_at: {
+      type: Date,
+    },
     budget: {
       raw: { type: String },
       currency: { type: String },
@@ -79,5 +108,8 @@ const jobSchema = new Schema(
 );
 
 jobSchema.index({ source_website: 1, external_id: 1 });
+jobSchema.index({ delete_after: 1 }, { expireAfterSeconds: 0 });
+jobSchema.index({ is_active: 1, postedAt: -1 });
+jobSchema.index({ source_website: 1, last_seen_at: -1 });
 
 export const Job = mongoose.model("Job", jobSchema);
