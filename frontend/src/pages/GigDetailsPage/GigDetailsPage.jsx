@@ -14,6 +14,19 @@ const sourceCatalog = [
   { name: "DesignCrowd", domain: "designcrowd.com" },
 ];
 
+const SaveIcon = () => (
+  <svg
+    aria-hidden="true"
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="2.4"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 5.75C6.5 4.78 7.28 4 8.25 4h7.5c.97 0 1.75.78 1.75 1.75V20l-5.5-3.25L6.5 20V5.75Z" />
+  </svg>
+);
+
 const normalizeSource = (value = "") =>
   String(value)
     .toLowerCase()
@@ -254,6 +267,10 @@ const GigDetailsPage = () => {
   const navigate = useNavigate();
   const { jobId } = useParams();
   const [job, setJob] = useState(null);
+  const [tracker, setTracker] = useState(null);
+  const [trackerMessage, setTrackerMessage] = useState("");
+  const [trackerToast, setTrackerToast] = useState(null);
+  const [showTrackingPrompt, setShowTrackingPrompt] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -289,6 +306,90 @@ const GigDetailsPage = () => {
 
     fetchGig();
   }, [jobId]);
+
+  useEffect(() => {
+    const fetchTracker = async () => {
+      const token = localStorage.getItem("authToken");
+
+      if (!token) {
+        return;
+      }
+
+      try {
+        const response = await axios.get(`http://localhost:2610/api/v1/applications/job/${jobId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setTracker(response.data?.data || null);
+      } catch (requestError) {
+        console.error(requestError);
+      }
+    };
+
+    fetchTracker();
+  }, [jobId]);
+
+  useEffect(() => {
+    if (!trackerToast) {
+      return undefined;
+    }
+
+    const toastTimer = window.setTimeout(() => {
+      setTrackerToast(null);
+    }, 3600);
+
+    return () => window.clearTimeout(toastTimer);
+  }, [trackerToast]);
+
+  const showTrackerToast = (message, type = "success") => {
+    setTrackerToast({ message, type });
+  };
+
+  const trackGig = async (status = "Viewed source", sourceOpened = false) => {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      const message = "Sign in to track this gig.";
+      setTrackerMessage(message);
+      showTrackerToast(message, "error");
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `http://localhost:2610/api/v1/applications/track/${jobId}`,
+        {
+          status,
+          sourceOpened,
+          sourceWebsite: job?.source_website,
+          sourceUrl: job?.source_url,
+          keepAppliedAt: Boolean(tracker?.appliedAt),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      setTracker(response.data?.data || null);
+      const message = response.data?.message || (
+        status === "Applied"
+          ? "Gig marked as applied in your tracker."
+          : "Gig saved to your application tracker."
+      );
+      const toastType = response.data?.alreadyTracked ? "info" : "success";
+
+      setTrackerMessage(message);
+      showTrackerToast(message, toastType);
+    } catch (requestError) {
+      console.error(requestError);
+      const message = "Unable to update your tracker right now.";
+      setTrackerMessage(message);
+      showTrackerToast(message, "error");
+    }
+  };
 
   const source = getSourceMeta(job?.source_website);
   const skills = getTechStack(job);
@@ -368,26 +469,23 @@ const GigDetailsPage = () => {
                   </div>
                   <p className="mt-2 text-4xl font-black text-white">{formatBudget(job)}</p>
                   <p className="mt-2 text-sm font-semibold text-slate-300">{formatBudgetType(job)} project</p>
-                  <div className="mt-6 grid gap-3">
+                  <div className="mt-6 flex flex-col items-start gap-3">
                     {job.source_url ? (
                       <a
                         href={job.source_url}
                         target="_blank"
                         rel="noreferrer"
+                        onClick={() => {
+                          setShowTrackingPrompt(true);
+                          setTrackerMessage("");
+                        }}
                         className="inline-flex items-center gap-1 text-sm font-black text-sky-200 transition hover:text-white"
                       >
                         <span className="underline decoration-sky-300 underline-offset-8">Apply now</span>
                         <span>-&gt;</span>
                       </a>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => navigate(`/apply-job/${job._id}`)}
-                        className="inline-flex items-center gap-1 text-left text-sm font-black text-sky-200 transition hover:text-white"
-                      >
-                        <span className="underline decoration-sky-300 underline-offset-8">Apply now</span>
-                        <span>-&gt;</span>
-                      </button>
+                      <p className="text-sm font-semibold text-slate-300">Source link not listed</p>
                     )}
                   </div>
                 </div>
@@ -452,19 +550,46 @@ const GigDetailsPage = () => {
               </div>
 
               <aside className="border-t border-blue-300 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
-                <p className="inline-flex border-b-2 border-blue-500 pb-2 text-sm font-black uppercase text-blue-700">Quick details</p>
-                <div className="mt-4">
-                  {renderDetailRow("Rating", formatValue(job.rating))}
-                  {renderDetailRow("Source ID", formatValue(job.external_id))}
-                  {renderDetailRow("Domain", formatValue(source.domain || job.source_website))}
-                  {renderDetailRow("First found", formatDate(job.first_seen_at))}
-                  {renderDetailRow("Last seen", formatDate(job.last_seen_at))}
+                <p className="inline-flex border-b-2 border-blue-500 pb-2 text-sm font-black uppercase text-blue-700">Application actions</p>
+                <div className="mt-5 border-y border-blue-300 py-4">
+                  <p className="text-xs font-black uppercase text-slate-500">Tracking status</p>
+                  <p className="mt-2 text-lg font-black text-slate-950">
+                    {tracker?.status || "Not saved yet"}
+                  </p>
+                  {trackerMessage && (
+                    <p className="mt-3 text-sm font-semibold leading-6 text-blue-700">{trackerMessage}</p>
+                  )}
+                </div>
+
+                <div className="mt-5 grid gap-3">
+                  <button
+                    type="button"
+                    onClick={() => trackGig("Planning to apply")}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-800"
+                  >
+                    <SaveIcon />
+                    <span>Save gig</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => trackGig("Applied")}
+                    className="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-emerald-100 px-5 py-3 text-sm font-black text-emerald-800 transition hover:bg-emerald-200"
+                  >
+                    Mark as applied
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/job-application-status")}
+                    className="inline-flex items-center justify-center rounded-lg border border-blue-200 bg-white px-5 py-3 text-sm font-black text-blue-700 transition hover:bg-blue-50"
+                  >
+                    Open tracker
+                  </button>
                 </div>
               </aside>
             </section>
 
             <section className="mt-10 border-y border-blue-300 bg-white px-6 py-8 sm:px-8 lg:px-10">
-              <div className="grid gap-8 lg:grid-cols-2">
+              <div className="grid gap-8 lg:grid-cols-3">
                 <div>
                   <p className="inline-flex border-b-2 border-blue-500 pb-2 text-sm font-black uppercase text-blue-700">Budget details</p>
                   <div className="mt-4">
@@ -483,6 +608,17 @@ const GigDetailsPage = () => {
                 </div>
 
                 <div className="border-t border-blue-300 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+                  <p className="inline-flex border-b-2 border-blue-500 pb-2 text-sm font-black uppercase text-blue-700">Quick details</p>
+                  <div className="mt-4">
+                    {renderDetailRow("Rating", formatValue(job.rating))}
+                    {renderDetailRow("Source ID", formatValue(job.external_id))}
+                    {renderDetailRow("Domain", formatValue(source.domain || job.source_website))}
+                    {renderDetailRow("First found", formatDate(job.first_seen_at))}
+                    {renderDetailRow("Last seen", formatDate(job.last_seen_at))}
+                  </div>
+                </div>
+
+                <div className="border-t border-blue-300 pt-8 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
                   <p className="inline-flex border-b-2 border-blue-500 pb-2 text-sm font-black uppercase text-blue-700">Dates</p>
                   <div className="mt-4">
                     {renderDetailRow("Posted", formatDate(job.postedAt))}
@@ -497,6 +633,92 @@ const GigDetailsPage = () => {
           </>
         )}
       </main>
+
+      {trackerToast && (
+        <div
+          className={`fixed right-5 top-24 z-50 max-w-sm rounded-lg border px-4 py-3 text-sm font-black shadow-2xl backdrop-blur-xl ${
+            trackerToast.type === "error"
+              ? "border-red-200 bg-red-50/95 text-red-700 shadow-red-950/10"
+              : trackerToast.type === "info"
+                ? "border-amber-200 bg-amber-50/95 text-amber-800 shadow-amber-950/10"
+                : "border-blue-300 bg-white/95 text-blue-800 shadow-blue-950/15"
+          }`}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                trackerToast.type === "error"
+                  ? "bg-red-500"
+                  : trackerToast.type === "info"
+                    ? "bg-amber-500"
+                    : "bg-emerald-500"
+              }`}
+            />
+            <span>{trackerToast.message}</span>
+            <button
+              type="button"
+              onClick={() => setTrackerToast(null)}
+              className="ml-2 rounded-md px-1.5 text-sm font-black text-slate-400 transition hover:bg-white hover:text-slate-700"
+              aria-label="Close tracker notification"
+            >
+              x
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showTrackingPrompt && job && (
+        <div className="fixed bottom-5 right-5 z-50 w-[calc(100%-2.5rem)] max-w-sm rounded-lg border border-blue-300/80 bg-white/75 p-5 shadow-2xl shadow-blue-950/20 backdrop-blur-xl ring-1 ring-white/70">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase text-blue-700">Application tracker</p>
+              <h3 className="mt-1 text-lg font-black text-slate-950">Track this application?</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowTrackingPrompt(false)}
+              className="rounded-md px-2 py-1 text-sm font-black text-slate-400 transition hover:bg-white/70 hover:text-slate-700"
+              aria-label="Close tracking prompt"
+            >
+              x
+            </button>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Keep <span className="font-bold text-slate-950">{job.job_title}</span> in your GigWorld tracker after visiting the source site.
+          </p>
+          <div className="mt-4 grid gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                await trackGig("Applied", true);
+                setShowTrackingPrompt(false);
+              }}
+              className="rounded-lg bg-blue-700 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-800"
+            >
+              Mark as applied
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await trackGig("Planning to apply", true);
+                setShowTrackingPrompt(false);
+              }}
+              className="rounded-lg border border-blue-200 bg-white/60 px-4 py-3 text-sm font-black text-blue-700 backdrop-blur transition hover:bg-blue-50/90"
+            >
+              Save for later
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTrackingPrompt(false)}
+              className="px-4 py-2 text-sm font-black text-slate-500 transition hover:text-slate-800"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

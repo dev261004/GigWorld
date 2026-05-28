@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
@@ -68,6 +68,19 @@ const postedWithinOptions = [
 ];
 
 const fallbackProjectStatuses = ["Open", "Urgent", "Actively Hiring", "Long Term", "Short Term"];
+
+const SaveIcon = () => (
+  <svg
+    aria-hidden="true"
+    className="h-4 w-4"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="2.4"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6.5 5.75C6.5 4.78 7.28 4 8.25 4h7.5c.97 0 1.75.78 1.75 1.75V20l-5.5-3.25L6.5 20V5.75Z" />
+  </svg>
+);
 
 const getTechStack = (job) => (Array.isArray(job?.tech_stack) ? job.tech_stack : []);
 
@@ -245,6 +258,11 @@ const WorkSearchPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isSourceDropdownOpen, setIsSourceDropdownOpen] = useState(false);
+  const [trackingMessage, setTrackingMessage] = useState("");
+  const [trackingPromptJob, setTrackingPromptJob] = useState(null);
+  const [trackingToasts, setTrackingToasts] = useState([]);
+  const [savingJobIds, setSavingJobIds] = useState([]);
+  const toastTimersRef = useRef([]);
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -258,6 +276,12 @@ const WorkSearchPage = () => {
     };
 
     fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      toastTimersRef.current.forEach((toastTimer) => window.clearTimeout(toastTimer));
+    };
   }, []);
 
   useEffect(() => {
@@ -349,8 +373,80 @@ const WorkSearchPage = () => {
     setCurrentPage(1);
   };
 
-  const handleApplyClick = (jobId) => {
-    navigate(`/apply-job/${jobId}`);
+  const showTrackerToast = (message, type = "success") => {
+    const toastId = `${Date.now()}-${Math.random()}`;
+    setTrackingToasts((current) => [...current, { id: toastId, message, type }].slice(-4));
+
+    const toastTimer = window.setTimeout(() => {
+      setTrackingToasts((current) => current.filter((toast) => toast.id !== toastId));
+      toastTimersRef.current = toastTimersRef.current.filter((timer) => timer !== toastTimer);
+    }, 4200);
+
+    toastTimersRef.current.push(toastTimer);
+  };
+
+  const dismissTrackerToast = (toastId) => {
+    setTrackingToasts((current) => current.filter((toast) => toast.id !== toastId));
+  };
+
+  const trackGig = async (job, status = "Viewed source", sourceOpened = false) => {
+    const token = localStorage.getItem("authToken");
+
+    if (!job?._id) {
+      const message = "Unable to save this gig right now.";
+      setTrackingMessage(message);
+      showTrackerToast(message, "error");
+      return false;
+    }
+
+    if (!token) {
+      const message = "Sign in to save this gig in your application tracker.";
+      setTrackingMessage(message);
+      showTrackerToast(message, "error");
+      return false;
+    }
+
+    setSavingJobIds((current) => (current.includes(job._id) ? current : [...current, job._id]));
+
+    try {
+      const response = await axios.post(
+        `http://localhost:2610/api/v1/applications/track/${job._id}`,
+        {
+          status,
+          sourceOpened,
+          sourceWebsite: job.source_website,
+          sourceUrl: job.source_url,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+      const message = response.data?.message || (
+        status === "Applied"
+          ? `${job.job_title || "Gig"} marked as applied.`
+          : `${job.job_title || "Gig"} saved to your tracker.`
+      );
+      const toastType = response.data?.alreadyTracked ? "info" : "success";
+
+      setTrackingMessage(message);
+      showTrackerToast(message, toastType);
+      return true;
+    } catch (requestError) {
+      console.error(requestError);
+      const message = "GigWorld could not save this gig right now.";
+      setTrackingMessage(message);
+      showTrackerToast(message, "error");
+      return false;
+    } finally {
+      setSavingJobIds((current) => current.filter((jobId) => jobId !== job._id));
+    }
+  };
+
+  const openSourcePrompt = (job) => {
+    setTrackingPromptJob(job);
+    setTrackingMessage("");
   };
 
   const handleDetailsClick = (jobId) => {
@@ -733,6 +829,19 @@ const WorkSearchPage = () => {
               </p>
             </div>
 
+            {trackingMessage && (
+              <div className="mb-4 flex flex-col gap-3 rounded-lg border border-blue-300 bg-blue-50 px-4 py-3 text-sm font-bold text-blue-800 sm:flex-row sm:items-center sm:justify-between">
+                <span>{trackingMessage}</span>
+                <button
+                  type="button"
+                  onClick={() => navigate("/job-application-status")}
+                  className="text-left text-blue-700 underline underline-offset-4 hover:text-blue-900"
+                >
+                  Open tracker
+                </button>
+              </div>
+            )}
+
             <div className="space-y-4">
               {isLoading && (
                 <>
@@ -767,6 +876,7 @@ const WorkSearchPage = () => {
               {jobs.map((job) => {
                 const techStack = getTechStack(job);
                 const source = getSourceMeta(job.source_website);
+                const isSavingGig = savingJobIds.includes(job._id);
 
                 return (
                   <article
@@ -806,20 +916,34 @@ const WorkSearchPage = () => {
                       <p><span className="font-bold text-slate-950">Posted:</span> {formatDate(job.postedAt || job.first_seen_at)}</p>
                     </div>
 
-                    {techStack.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {techStack.slice(0, 5).map((tech) => (
-                          <span key={tech} className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                            {tech}
-                          </span>
-                        ))}
-                        {techStack.length > 5 && (
-                          <span className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                            +{techStack.length - 5} more
-                          </span>
+                    <div className="mt-4 flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-wrap gap-2">
+                        {techStack.length > 0 && (
+                          <>
+                            {techStack.slice(0, 5).map((tech) => (
+                              <span key={tech} className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                                {tech}
+                              </span>
+                            ))}
+                            {techStack.length > 5 && (
+                              <span className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+                                +{techStack.length - 5} more
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => trackGig(job, "Planning to apply")}
+                        disabled={isSavingGig}
+                        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-600/20 disabled:cursor-wait disabled:opacity-60"
+                        aria-label={`Save ${job.job_title} to tracker`}
+                        title={isSavingGig ? "Saving gig" : "Save gig"}
+                      >
+                        <SaveIcon />
+                      </button>
+                    </div>
 
                     <div className="mt-5 flex flex-col gap-3 border-t border-blue-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
                       <p className="line-clamp-2 text-sm leading-6 text-slate-500">
@@ -838,6 +962,7 @@ const WorkSearchPage = () => {
                             href={job.source_url}
                             target="_blank"
                             rel="noreferrer"
+                            onClick={() => openSourcePrompt(job)}
                             className="rounded-lg bg-blue-700 px-5 py-3 text-center text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
                           >
                             Apply now
@@ -845,10 +970,10 @@ const WorkSearchPage = () => {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleApplyClick(job._id)}
+                            onClick={() => trackGig(job, "Planning to apply")}
                             className="rounded-lg bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800"
                           >
-                            Apply now
+                            Track gig
                           </button>
                         )}
                       </div>
@@ -904,6 +1029,102 @@ const WorkSearchPage = () => {
           </div>
         </section>
       </main>
+
+      {trackingToasts.length > 0 && (
+        <div className="fixed right-5 top-24 z-50 grid w-[calc(100%-2.5rem)] max-w-sm gap-3">
+          {trackingToasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`rounded-lg border p-4 shadow-2xl backdrop-blur-xl ${
+                toast.type === "error"
+                  ? "border-red-200 bg-red-50/95 text-red-700 shadow-red-950/10"
+                  : toast.type === "info"
+                    ? "border-amber-200 bg-amber-50/95 text-amber-800 shadow-amber-950/10"
+                    : "border-blue-300 bg-white/95 text-blue-800 shadow-blue-950/15"
+              }`}
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase">
+                    {toast.type === "error" ? "Tracker issue" : toast.type === "info" ? "Already tracked" : "Saved"}
+                  </p>
+                  <p className="mt-1 text-sm font-bold leading-6">{toast.message}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => dismissTrackerToast(toast.id)}
+                  className="rounded-md px-2 py-1 text-sm font-black text-slate-400 transition hover:bg-white hover:text-slate-700"
+                  aria-label="Close tracker notification"
+                >
+                  x
+                </button>
+              </div>
+              {toast.type !== "error" && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/job-application-status")}
+                  className="mt-3 text-sm font-black text-blue-700 underline underline-offset-4 transition hover:text-blue-900"
+                >
+                  Open tracker
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {trackingPromptJob && (
+        <div className="fixed bottom-5 right-5 z-50 w-[calc(100%-2.5rem)] max-w-sm rounded-lg border border-blue-300/80 bg-white/75 p-5 shadow-2xl shadow-blue-950/20 backdrop-blur-xl ring-1 ring-white/70">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase text-blue-700">Application tracker</p>
+              <h3 className="mt-1 text-lg font-black text-slate-950">Track this application?</h3>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTrackingPromptJob(null)}
+              className="rounded-md px-2 py-1 text-sm font-black text-slate-400 transition hover:bg-white/70 hover:text-slate-700"
+              aria-label="Close tracking prompt"
+            >
+              x
+            </button>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
+            Keep <span className="font-bold text-slate-950">{trackingPromptJob.job_title}</span> in your GigWorld tracker after visiting the source site.
+          </p>
+          <div className="mt-4 grid gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                await trackGig(trackingPromptJob, "Applied", true);
+                setTrackingPromptJob(null);
+              }}
+              className="rounded-lg bg-blue-700 px-4 py-3 text-sm font-black text-white transition hover:bg-blue-800"
+            >
+              Mark as applied
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                await trackGig(trackingPromptJob, "Planning to apply", true);
+                setTrackingPromptJob(null);
+              }}
+              className="rounded-lg border border-blue-200 bg-white/60 px-4 py-3 text-sm font-black text-blue-700 backdrop-blur transition hover:bg-blue-50/90"
+            >
+              Save for later
+            </button>
+            <button
+              type="button"
+              onClick={() => setTrackingPromptJob(null)}
+              className="px-4 py-2 text-sm font-black text-slate-500 transition hover:text-slate-800"
+            >
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

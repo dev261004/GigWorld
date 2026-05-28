@@ -32,7 +32,6 @@
 // };
 
 // export default UserProfilePage;
-import React from "react";
 import { Link } from "react-router-dom";
 
 const UserProfilePage = () => {
@@ -46,7 +45,7 @@ const UserProfilePage = () => {
             <Link to="/update-account" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Update Account Details</Link>
           </li>
           <li>
-            <Link to="/job-application-status" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Job Application Status</Link>
+            <Link to="/job-application-status" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Application Tracker</Link>
           </li>
           <li>
             <Link to="/projects" className="block py-2 px-4 bg-blue-600 hover:bg-blue-500 rounded transition duration-200 ease-in-out">Projects</Link>
@@ -65,7 +64,7 @@ const UserProfilePage = () => {
       <div className="flex-1 p-8 bg-white">
         <h1 className="text-2xl font-bold text-gray-900">Welcome to Your Profile</h1>
         <div className="mt-4">
-          <p>Here you can manage your account details, check your job application status, and more.</p>
+          <p>Here you can manage your account details, track saved gig applications, and more.</p>
         </div>
       </div>
     </div>

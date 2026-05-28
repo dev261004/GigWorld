@@ -1,15 +1,57 @@
-import mongoose,{ Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-const jobApplicationSchema = new mongoose.Schema({
-  fullName: { type: String, required: true },
-  email: { type: String, required: true },
-  message: { type: String, required: true },
-  resume: { type: String, required: true },
-  jobId: { type: Schema.Types.ObjectId, ref: "Job", required: true },
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+const applicationStatuses = [
+  "Viewed source",
+  "Planning to apply",
+  "Applied",
+  "Interviewing",
+  "Rejected",
+  "Won",
+  "Archived",
+];
 
-  appliedAt: { type: Date, default: Date.now },
-});
+const jobApplicationSchema = new Schema(
+  {
+    jobId: { type: Schema.Types.ObjectId, ref: "Job", required: true },
+    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    status: {
+      type: String,
+      enum: applicationStatuses,
+      default: "Viewed source",
+    },
+    notes: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    reminderAt: {
+      type: Date,
+    },
+    sourceWebsite: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    sourceUrl: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    sourceOpenedAt: {
+      type: Date,
+    },
+    appliedAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
+jobApplicationSchema.index({ userId: 1, jobId: 1 }, { unique: true });
+jobApplicationSchema.index({ userId: 1, updatedAt: -1 });
+
+export { applicationStatuses };
 export const JobApplication = mongoose.model("JobApplication", jobApplicationSchema);
 
