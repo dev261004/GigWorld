@@ -1,157 +1,69 @@
-// import React from "react";
-// import { Link } from "react-router-dom";
-
-// const Navbar = () => {
-//   return (
-//     <header className="text-slate-700 container relative mx-auto flex flex-col overflow-hidden px-4 py-4 lg:flex-row lg:items-center">
-//       <a
-//         href="#"
-//         className="flex items-center whitespace-nowrap text-2xl font-black"
-//       >
-//         <span className="mr-2 w-8">
-//           <img src="/images/JOJj79gp_Djhwdp_ZOKLL.png" alt="" />
-//         </span>
-//         Work Hive
-//       </a>
-//       <input type="checkbox" className="peer hidden" id="navbar-open" />
-//       <label
-//         className="absolute top-5 right-5 cursor-pointer lg:hidden"
-//         htmlFor="navbar-open"
-//       >
-//         <svg
-//           className="h-7 w-7"
-//           xmlns="http://www.w3.org/2000/svg"
-//           fill="none"
-//           viewBox="0 0 24 24"
-//           stroke="currentColor"
-//         >
-//           <path
-//             strokeLinecap="round"
-//             strokeLinejoin="round"
-//             strokeWidth="1.5"
-//             d="M4 6h16M4 12h16M4 18h16"
-//           />
-//         </svg>
-//       </label>
-//       <nav
-//         aria-label="Header Navigation"
-//         className="peer-checked:pt-8 peer-checked:max-h-60 flex max-h-0 w-full flex-col items-center overflow-hidden transition-all lg:ml-24 lg:max-h-full lg:flex-row"
-//       >
-//         <ul className="flex w-full flex-col items-center space-y-2 lg:flex-row lg:justify-center lg:space-y-0">
-//           <li className="lg:mr-12">
-//             <Link
-//               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-//               to="/"
-//             >
-//               Home
-//             </Link>
-//           </li>
-//           <li className="lg:mr-12">
-//             <Link
-//               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-//               to="/pricing"
-//             >
-//               Pricing
-//             </Link>
-//           </li>
-//           <li className="lg:mr-12">
-//             <Link
-//               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-//               to="/contact"
-//             >
-//               Contact
-//             </Link>
-//           </li>
-//           <li className="lg:mr-12">
-//             <a
-//               className="rounded text-gray-700 transition focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2"
-//               href="#"
-//             >
-//               FAQ
-//             </a>
-//           </li>
-//         </ul>
-//         <hr className="mt-4 w-full lg:hidden" />
-//         <div className="my-4 flex items-center space-x-6 space-y-2 lg:my-0 lg:ml-auto lg:space-x-8 lg:space-y-0">
-//           <Link
-//             to="/signin"
-//             title=""
-//             className={"whitespace-nowrap rounded font-medium transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-blue-700 focus:ring-offset-2 hover:text-opacity-50 "}
-//           >
-//             {" "}Sign in{" "}
-//           </Link>
-//           <Link
-//             to="/signup"
-//             title=""
-//             className="whitespace-nowrap rounded-xl bg-blue-700 px-5 py-3 font-medium text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2 hover:bg-blue-600"
-//           >
-//             Sign up
-//           </Link>
-//         </div>
-//       </nav>
-//     </header>
-//   );
-// };
-
-// export default Navbar;
-import React, { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import BrandLogo from "../BrandLogo/BrandLogo";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check if the user is logged in (you can store the user token or authentication state in localStorage)
   useEffect(() => {
-    const token = localStorage.getItem("authToken"); // Or use a context or Redux state
+    const token = localStorage.getItem("authToken");
     if (token) {
       setIsAuthenticated(true);
     }
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("authToken"); // Clear the auth token or user data
+    localStorage.removeItem("authToken");
     setIsAuthenticated(false);
-    navigate("/"); // Redirect to home after logout
+    navigate("/");
   };
 
   return (
-    <header className="text-slate-700 container relative mx-auto flex flex-col overflow-hidden px-4 py-4 lg:flex-row lg:items-center">
-      <Link to="/" className="flex items-center whitespace-nowrap text-2xl font-black">
-        <span className="mr-2 w-8">
-          <img src="/images/JOJj79gp_Djhwdp_ZOKLL.png" alt="" />
-        </span>
-        Work Hive
-      </Link>
-      <input type="checkbox" className="peer hidden" id="navbar-open" />
-      <label className="absolute top-5 right-5 cursor-pointer lg:hidden" htmlFor="navbar-open">
-        <svg className="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </label>
-      <nav aria-label="Header Navigation" className="peer-checked:pt-8 peer-checked:max-h-60 flex max-h-0 w-full flex-col items-center overflow-hidden transition-all lg:ml-24 lg:max-h-full lg:flex-row">
-        <ul className="flex w-full flex-col items-center space-y-2 lg:flex-row lg:justify-center lg:space-y-0">
-          <li className="lg:mr-12"><Link className="rounded text-gray-700" to="/">Home</Link></li>
-          <li className="lg:mr-12"><Link className="rounded text-gray-700" to="/pricing">Pricing</Link></li>
-          <li className="lg:mr-12"><Link className="rounded text-gray-700" to="/contact">Contact</Link></li>
-         
-        </ul>
-        <div className="my-4 flex items-center space-x-6 space-y-2 lg:my-0 lg:ml-auto lg:space-x-8 lg:space-y-0">
-          {isAuthenticated ? (
-            <div className="flex ijustify-center items-center">
-              <Link to="/profile">
-                <img src="./image.png" alt="User Profile"  className="w-10 h-10 rounded-full object-cover transition-all duration-300 ease-in-out hover:scale-110" />
-              </Link>
-              <button onClick={handleLogout} className="whitespace-nowrap rounded-xl bg-blue-700 px-5 py-3 font-medium text-white">Logout</button>
-            </div>
-          ) : (
-            <>
-              <Link to="/signin" className="whitespace-nowrap rounded font-medium text-gray-700">Sign in</Link>
-              <Link to="/signup" className="whitespace-nowrap rounded-xl bg-blue-700 px-5 py-3 font-medium text-white">Sign up</Link>
-            </>
-          )}
-        </div>
-      </nav>
+    <header className="sticky top-0 z-50 border-b border-white/60 bg-white/75 text-slate-700 shadow-[0_14px_34px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+      <div className="relative mx-auto flex max-w-7xl flex-col px-4 py-3 sm:px-6 lg:flex-row lg:items-center lg:px-8">
+        <Link to="/" className="flex items-center text-2xl">
+          <BrandLogo />
+        </Link>
+        <input type="checkbox" className="peer hidden" id="navbar-open" />
+        <label className="absolute right-5 top-5 cursor-pointer rounded-lg p-1 text-slate-800 transition hover:bg-slate-100 lg:hidden" htmlFor="navbar-open">
+          <svg className="h-7 w-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </label>
+        <nav aria-label="Header Navigation" className="peer-checked:max-h-96 peer-checked:pt-6 flex max-h-0 w-full flex-col items-center overflow-hidden transition-all duration-300 lg:ml-16 lg:max-h-full lg:flex-row lg:overflow-visible lg:pt-0">
+          <ul className="flex w-full flex-col items-center gap-2 text-sm font-semibold lg:flex-row lg:justify-center lg:gap-8">
+            <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/">Home</Link></li>
+            <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/pricing">Pricing</Link></li>
+            <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/contact">Contact</Link></li>
+          </ul>
+          <div className="my-4 flex items-center gap-4 lg:my-0 lg:ml-auto">
+            {isAuthenticated ? (
+              <div className="flex items-center justify-center gap-4">
+                <Link to="/profile" className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                  <img src="./image.png" alt="User Profile" className="h-10 w-10 rounded-full object-cover transition-all duration-300 ease-in-out hover:scale-105" />
+                </Link>
+                <button onClick={handleLogout} className="whitespace-nowrap rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">Logout</button>
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/signin"
+                  className="whitespace-nowrap rounded-lg border border-slate-200 bg-white/85 px-4 py-2.5 text-sm font-bold text-slate-800 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/signup"
+                  className="whitespace-nowrap rounded-lg bg-gradient-to-r from-blue-700 to-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-700/20 transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-blue-700/25"
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
+        </nav>
+      </div>
     </header>
   );
 };

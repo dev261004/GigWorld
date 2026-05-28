@@ -63,7 +63,7 @@ const main = async () => {
 
   console.log(
     `Lifecycle backfill complete. Matched ${backfillResult.matchedCount}, ` +
-      `modified ${backfillResult.modifiedCount}, expired ${expiredResult.modifiedCount}.`
+    `modified ${backfillResult.modifiedCount}, expired ${expiredResult.modifiedCount}.`
   );
 };
 

@@ -1,3 +1,21 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes source-logo-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.source-logo-slider {
+  animation: source-logo-scroll 24s linear infinite;
+}
+
+.source-logo-slider:hover {
+  animation-play-state: paused;
+}
