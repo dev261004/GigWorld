@@ -220,7 +220,7 @@ const SignupPage = () => {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label htmlFor="fullName" className="text-sm font-semibold text-slate-700">
-                    Full name
+                    Name
                   </label>
                   <input
                     type="text"
@@ -232,7 +232,7 @@ const SignupPage = () => {
                     onChange={handleChange}
                     onBlur={() => markTouched("fullName")}
                     className={getInputClass("fullName")}
-                    placeholder="Jane Doe"
+                    placeholder="Name"
                     aria-invalid={touched.fullName && Boolean(fieldErrors.fullName)}
                     aria-describedby={
                       touched.fullName && fieldErrors.fullName ? "signup-full-name-error" : undefined

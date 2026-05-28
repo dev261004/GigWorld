@@ -35,6 +35,157 @@ const isJobUnavailable = (job, now = new Date()) => (
   (job.application_deadline && new Date(job.application_deadline) <= now)
 );
 
+const budgetRanges = {
+  "<100": { max: 100 },
+  "100-500": { min: 100, max: 500 },
+  "500-1000": { min: 500, max: 1000 },
+  "1000-5000": { min: 1000, max: 5000 },
+  "5000+": { min: 5000 },
+};
+
+const postedWithinDays = {
+  "24h": 1,
+  "3d": 3,
+  "7d": 7,
+  "30d": 30,
+};
+
+const experiencePatterns = {
+  entry: ["entry", "beginner", "fresher", "junior", "no experience"],
+  junior: ["junior", "0-2", "1+", "entry"],
+  mid: ["mid", "intermediate", "2-5", "2-4"],
+  senior: ["senior", "5+", "expert"],
+  expert: ["expert", "advanced", "senior"],
+};
+
+const toArray = (value) => {
+  if (Array.isArray(value)) {
+    return value.filter(Boolean);
+  }
+
+  return value ? [value] : [];
+};
+
+const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const regexOr = (field, values) => {
+  const cleanValues = toArray(values).map((value) => String(value).trim()).filter(Boolean);
+
+  if (cleanValues.length === 0) {
+    return null;
+  }
+
+  return {
+    $or: cleanValues.map((value) => ({
+      [field]: { $regex: escapeRegex(value), $options: "i" },
+    })),
+  };
+};
+
+const buildExperienceCondition = (values) => {
+  const patterns = toArray(values)
+    .flatMap((value) => experiencePatterns[String(value).toLowerCase()] || [value])
+    .filter(Boolean);
+
+  return regexOr("experience", patterns);
+};
+
+const buildBudgetCondition = (rangeKey) => {
+  const range = budgetRanges[rangeKey];
+
+  if (!range) {
+    return null;
+  }
+
+  const numericFields = [
+    { min: "budget.min", max: "budget.max" },
+    { min: "salary_range.min", max: "salary_range.max" },
+  ];
+
+  if (range.max && !range.min) {
+    return {
+      $or: numericFields.flatMap((field) => ([
+        { [field.min]: { $lte: range.max } },
+        { [field.max]: { $lte: range.max } },
+      ])),
+    };
+  }
+
+  if (range.min && !range.max) {
+    return {
+      $or: numericFields.flatMap((field) => ([
+        { [field.min]: { $gte: range.min } },
+        { [field.max]: { $gte: range.min } },
+      ])),
+    };
+  }
+
+  return {
+    $or: numericFields.flatMap((field) => ([
+      { [field.min]: { $gte: range.min, $lte: range.max } },
+      { [field.max]: { $gte: range.min, $lte: range.max } },
+      { [field.min]: { $lte: range.max }, [field.max]: { $gte: range.min } },
+    ])),
+  };
+};
+
+const buildPostedWithinCondition = (postedWithin, now = new Date()) => {
+  const days = postedWithinDays[postedWithin];
+
+  if (!days) {
+    return null;
+  }
+
+  const startDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+
+  return {
+    $or: [
+      { postedAt: { $gte: startDate } },
+      { first_seen_at: { $gte: startDate } },
+      { scraped_at: { $gte: startDate } },
+      { createdAt: { $gte: startDate } },
+    ],
+  };
+};
+
+const cleanOptionList = (values, limit = 30) => (
+  values
+    .map((value) => String(value || "").trim())
+    .filter((value) => value && value.toLowerCase() !== "unknown" && value.toLowerCase() !== "not specified")
+    .filter((value, index, list) => list.findIndex((item) => item.toLowerCase() === value.toLowerCase()) === index)
+    .sort((first, second) => first.localeCompare(second))
+    .slice(0, limit)
+);
+
+const getFilterOptions = asyncHandler(async(req, res) => {
+  const now = new Date();
+  const baseConditions = activeJobConditions(now);
+
+  const [sourceWebsites, locations, experienceLevels, projectStatuses, skillRows] = await Promise.all([
+    Job.distinct("source_website", baseConditions),
+    Job.distinct("location", baseConditions),
+    Job.distinct("experience", baseConditions),
+    Job.distinct("project_status", baseConditions),
+    Job.aggregate([
+      { $match: baseConditions },
+      { $unwind: "$tech_stack" },
+      { $group: { _id: "$tech_stack", count: { $sum: 1 } } },
+      { $sort: { count: -1, _id: 1 } },
+      { $limit: 32 },
+    ]),
+  ]);
+
+  return res.status(200).json({
+    data: {
+      sourceWebsites: cleanOptionList(sourceWebsites),
+      skills: cleanOptionList(skillRows.map((row) => row._id), 32),
+      locations: cleanOptionList(locations),
+      experienceLevels: cleanOptionList(experienceLevels),
+      projectStatuses: cleanOptionList(projectStatuses),
+    },
+  });
+});
+
 // Get all jobs
 const getAllJobs = asyncHandler(async(req, res) => {
     // try {
@@ -44,20 +195,65 @@ const getAllJobs = asyncHandler(async(req, res) => {
     //  throw new ApiError(500,'Something went wong while getting all jobs');
     // }
     const { searchKeyword = "", filters = {}, page = 1, perPage = 10 } = req.body || {};
-    const { location, experience, techStack, rating, min_requirements } = filters;
+    const {
+      location,
+      locations = [],
+      experience,
+      experienceLevels = [],
+      techStack,
+      skills = [],
+      rating,
+      min_requirements,
+      sources = [],
+      budgetRange,
+      budgetType = "any",
+      postedWithin,
+      projectStatuses = [],
+    } = filters;
     const now = new Date();
     const currentPage = Math.max(Number(page) || 1, 1);
     const pageSize = Math.max(Number(perPage) || 10, 1);
+    const andConditions = [activeJobConditions(now)];
     
-    const filterConditions = {
-      ...activeJobConditions(now),
-      ...(searchKeyword && { job_title: { $regex: searchKeyword, $options: 'i' } }),
-      ...(location && { location: { $regex: location, $options: 'i' } }),
-      ...(experience && { experience: { $regex: experience, $options: 'i' } }),
-      ...(techStack && { tech_stack: { $in: [techStack] } }),
-      ...(rating && { rating: { $gte: parseFloat(rating) } }),
-      ...(min_requirements && { min_requirements: { $regex: min_requirements, $options: 'i' } })
-    };
+    if (searchKeyword) {
+      const searchRegex = { $regex: escapeRegex(searchKeyword), $options: "i" };
+      andConditions.push({
+        $or: [
+          { job_title: searchRegex },
+          { company_name: searchRegex },
+          { location: searchRegex },
+          { min_requirements: searchRegex },
+          { tech_stack: searchRegex },
+        ],
+      });
+    }
+
+    [
+      regexOr("source_website", sources),
+      regexOr("location", [...toArray(location), ...toArray(locations)]),
+      buildExperienceCondition([...toArray(experience), ...toArray(experienceLevels)]),
+      regexOr("tech_stack", [...toArray(techStack), ...toArray(skills)]),
+      regexOr("project_status", projectStatuses),
+      buildBudgetCondition(budgetRange),
+      buildPostedWithinCondition(postedWithin, now),
+      min_requirements ? regexOr("min_requirements", min_requirements) : null,
+    ].forEach((condition) => {
+      if (condition) {
+        andConditions.push(condition);
+      }
+    });
+
+    if (rating) {
+      andConditions.push({ rating: { $gte: parseFloat(rating) } });
+    }
+
+    if (budgetType === "hourly") {
+      andConditions.push({ "budget.is_hourly": true });
+    } else if (budgetType === "fixed") {
+      andConditions.push({ "budget.is_hourly": false });
+    }
+
+    const filterConditions = { $and: andConditions };
   
     try {
       const jobs = await Job.find(filterConditions)
@@ -171,6 +367,7 @@ const searchJobsByKeyword = asyncHandler(async (req, res) => {
   
 export {
     getAllJobs,
+    getFilterOptions,
     getJobById,
     createJob,
     updateJob,

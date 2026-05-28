@@ -10,6 +10,7 @@ import SignupPage from "./pages/SignupPage/SignupPage"
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
 import ApplyJobPage from './pages/ApplyJobPage/ApplyJobPage'
+import GigDetailsPage from "./pages/GigDetailsPage/GigDetailsPage"
 import UserProfilePage from "./pages/UserProfilePage/UserProfilePage"
 import UpdateAccountDetailsPage from "./pages/UpdateAccountDetailPage/UpdateAccountDetailPage"
 import JobApplicationStatusPage from "./pages/JobApplicationStatusPage/JobApplicationStatusPage"
@@ -31,6 +32,7 @@ function App() {
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/contact" element={<ContactPage />} />
     <Route path="/work" element={<WorkSearchPage />} />
+    <Route path="/gigs/:jobId" element={<GigDetailsPage />} />
     <Route path="/apply-job/:jobId" element={<ApplyJobPage />} />
     <Route path="/job-application-status" element={<JobApplicationStatusPage />} />
     <Route path="/profile" element={<UserProfilePage/>} />

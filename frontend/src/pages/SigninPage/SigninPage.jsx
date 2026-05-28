@@ -17,7 +17,7 @@ const workflowItems = [
 const stats = [
   { value: "10+", label: "Gig sources" },
   { value: "24/7", label: "Fresh listings" },
-  { value: "1", label: "Focused dashboard" },
+  { value: "1", label: "Focused job feed" },
 ];
 
 const normalizeEmail = (value) => value.replace(/\s/g, "").toLowerCase();
@@ -104,7 +104,7 @@ const SigninPage = () => {
 
       if (token) {
         localStorage.setItem("authToken", token);
-        navigate("/dashboard");
+        navigate("/work");
       } else {
         setError("Sign in succeeded, but no access token was returned.");
       }

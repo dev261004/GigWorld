@@ -182,7 +182,7 @@ const ApplyJobPage = () => {
       });
       
       alert(res.data.message);
-      navigate("/dashboard")
+      navigate("/work")
     } catch (error) {
       console.error(error);
       if (error.response?.status === 410) {

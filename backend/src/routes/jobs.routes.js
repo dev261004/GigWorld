@@ -1,9 +1,10 @@
 import { Router } from "express";
 const router = Router();
-import { getAllJobs,getJobById,createJob,updateJob,deleteJob,searchJobsByKeyword } from "../controllers/jobs.controller.js";
+import { getAllJobs,getFilterOptions,getJobById,createJob,updateJob,deleteJob,searchJobsByKeyword } from "../controllers/jobs.controller.js";
 
 // Get all jobs
 router.post('/',getAllJobs);
+router.get('/filter-options',getFilterOptions);
 //router.get('/', jobsController.getAllJobs);
 
 // Get a single job by ID
