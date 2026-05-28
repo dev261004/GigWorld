@@ -170,20 +170,65 @@ const forgotPassword = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Password reset link sent" });
 });
 
+const findResetPasswordUser = async (token) => {
+  const hashedToken = createHash("sha256").update(token).digest("hex");
+  const user = await User.findOne({ resetPasswordToken: hashedToken });
+
+  if (!user) {
+    return {
+      status: 400,
+      message: "This password reset link is invalid. Please request a new link.",
+      user: null,
+    };
+  }
+
+  const expiresAt = user.resetPasswordExpires ? new Date(user.resetPasswordExpires).getTime() : 0;
+
+  if (!expiresAt || expiresAt <= Date.now()) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    return {
+      status: 410,
+      message: "This password reset link has expired. Please request a new link.",
+      user: null,
+    };
+  }
+
+  return {
+    status: 200,
+    message: "Password reset link is valid",
+    user,
+    expiresAt: new Date(expiresAt).toISOString(),
+  };
+};
+
+const verifyResetPasswordToken = asyncHandler(async (req, res) => {
+  const { token } = req.params;
+  const result = await findResetPasswordUser(token);
+
+  if (!result.user) {
+    return res.status(result.status).json({ message: result.message });
+  }
+
+  return res.status(200).json({
+    message: result.message,
+    expiresAt: result.expiresAt,
+  });
+});
+
 const resetPassword = asyncHandler(async (req, res) => {
     const { token } = req.params;
     const { newPassword } = req.body;
-  
-    // Hash the token and find user by token and token expiration
-    const hashedToken = createHash("sha256").update(token).digest("hex");
-    const user = await User.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpires: { $gt: Date.now() }, // Ensure token is not expired
-    });
-  
-    if (!user) {
-      return res.status(400).json({ message: "Invalid or expired token" });
+
+    const result = await findResetPasswordUser(token);
+
+    if (!result.user) {
+      return res.status(result.status).json({ message: result.message });
     }
+
+    const user = result.user;
   
     // Update the password and clear reset fields
     user.password = newPassword;
@@ -195,4 +240,4 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.status(200).json({ message: "Password reset successfully" });
   });
 
-  export {forgotPassword,resetPassword}
+  export {forgotPassword,resetPassword,verifyResetPasswordToken}

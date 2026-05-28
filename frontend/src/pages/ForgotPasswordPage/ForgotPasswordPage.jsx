@@ -132,7 +132,10 @@ const ForgotPasswordPage = () => {
               <Link to="/" className="flex items-center font-black text-slate-950 lg:hidden">
                 <BrandLogo />
               </Link>
-              <Link to="/signin" className="ml-auto text-sm font-medium text-slate-500 transition hover:text-blue-700">
+              <Link to="/signin" className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-bold text-blue-700 transition hover:bg-blue-50 hover:text-blue-900">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Back to sign in
               </Link>
             </div>

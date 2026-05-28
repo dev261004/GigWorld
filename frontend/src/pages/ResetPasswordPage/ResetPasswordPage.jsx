@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
@@ -57,6 +57,7 @@ const ResetPasswordPage = () => {
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState("info");
   const [loading, setLoading] = useState(false);
+  const [tokenStatus, setTokenStatus] = useState("checking");
   const [touched, setTouched] = useState({
     newPassword: false,
     confirmPassword: false,
@@ -67,12 +68,63 @@ const ResetPasswordPage = () => {
     confirmPassword: confirmPassword.trim(),
   };
   const fieldErrors = getResetErrors(cleanedPasswords);
-  const isFormValid = !fieldErrors.newPassword && !fieldErrors.confirmPassword;
+  const canUseResetLink = tokenStatus === "valid";
+  const isCheckingToken = tokenStatus === "checking";
+  const isFormValid = canUseResetLink && !fieldErrors.newPassword && !fieldErrors.confirmPassword;
   const showPasswordRules = newPassword.length > 0;
   const passwordStatus = passwordRequirements.map((requirement) => ({
     ...requirement,
     isValid: requirement.isMet(cleanedPasswords.newPassword),
   }));
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifyResetLink = async () => {
+      if (!token) {
+        setTokenStatus("invalid");
+        setMessage("This password reset link is invalid. Please request a new link.");
+        setMessageType("error");
+        return;
+      }
+
+      setTokenStatus("checking");
+      setMessage("");
+      setMessageType("info");
+
+      try {
+        const response = await fetch(`http://localhost:2610/api/v1/users/reset-password/${token}`);
+        const data = await response.json().catch(() => ({}));
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (response.ok) {
+          setTokenStatus("valid");
+          return;
+        }
+
+        setTokenStatus(response.status === 410 ? "expired" : "invalid");
+        setMessage(data.message || "This password reset link is invalid or expired. Please request a new link.");
+        setMessageType("error");
+      } catch (error) {
+        console.error("Could not verify reset link:", error);
+        if (!isMounted) {
+          return;
+        }
+        setTokenStatus("error");
+        setMessage("The server could not verify this reset link. Please try again in a moment.");
+        setMessageType("error");
+      }
+    };
+
+    verifyResetLink();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
 
   const markTouched = (field) => {
     setTouched((current) => ({
@@ -88,6 +140,16 @@ const ResetPasswordPage = () => {
     e.preventDefault();
     setMessage("");
     setMessageType("info");
+
+    if (!canUseResetLink) {
+      setMessage(
+        tokenStatus === "expired"
+          ? "This password reset link has expired. Please request a new link."
+          : "This password reset link is invalid. Please request a new link."
+      );
+      setMessageType("error");
+      return;
+    }
 
     if (!isFormValid) {
       setTouched({
@@ -113,6 +175,11 @@ const ResetPasswordPage = () => {
         setMessageType("success");
         setTimeout(() => navigate("/signin"), 3000);
       } else {
+        if (response.status === 410) {
+          setTokenStatus("expired");
+        } else if (response.status === 400) {
+          setTokenStatus("invalid");
+        }
         setMessage(data.message || "Failed to reset password. The link may be expired or invalid.");
         setMessageType("error");
       }
@@ -163,7 +230,10 @@ const ResetPasswordPage = () => {
               <Link to="/" className="flex items-center font-black text-slate-950 lg:hidden">
                 <BrandLogo />
               </Link>
-              <Link to="/signin" className="ml-auto text-sm font-medium text-slate-500 transition hover:text-blue-700">
+              <Link to="/signin" className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-bold text-blue-700 transition hover:bg-blue-50 hover:text-blue-900">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Back to sign in
               </Link>
             </div>
@@ -177,6 +247,12 @@ const ResetPasswordPage = () => {
             </div>
 
             <form onSubmit={handleResetPassword} className="mt-8 space-y-5">
+              {isCheckingToken && (
+                <div role="status" className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
+                  Checking your reset link...
+                </div>
+              )}
+
               {message && (
                 <div
                   role="alert"
@@ -190,118 +266,137 @@ const ResetPasswordPage = () => {
                 </div>
               )}
 
-              <div>
-                <label htmlFor="new-password" className="text-sm font-semibold text-slate-700">
-                  New password
-                </label>
-                <div className="relative">
-                  <input
-                    id="new-password"
-                    name="newPassword"
-                    type={showNewPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value.trim());
-                      markTouched("newPassword");
-                    }}
-                    onBlur={() => markTouched("newPassword")}
-                    className={`${getInputClass("newPassword")} pr-16`}
-                    placeholder="Create a new password"
-                    aria-invalid={touched.newPassword && Boolean(fieldErrors.newPassword)}
-                    aria-describedby={
-                      touched.newPassword && fieldErrors.newPassword
-                        ? "reset-new-password-error"
-                        : showPasswordRules
-                          ? "reset-password-rules"
-                          : undefined
-                    }
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword((current) => !current)}
-                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-blue-700 transition hover:text-blue-900"
-                    aria-label={showNewPassword ? "Hide new password" : "Show new password"}
-                    title={showNewPassword ? "Hide new password" : "Show new password"}
-                  >
-                    {showNewPassword ? <EyeOffIcon /> : <EyeIcon />}
-                  </button>
-                </div>
-                {touched.newPassword && fieldErrors.newPassword && (
-                  <p id="reset-new-password-error" className="mt-2 text-xs font-medium text-red-600">
-                    {fieldErrors.newPassword}
+              {isCheckingToken ? null : !canUseResetLink ? (
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-950">
+                    Need a new reset link?
                   </p>
-                )}
-                {showPasswordRules && (
-                  <div id="reset-password-rules" className="mt-2 grid gap-1.5 text-[11px] sm:grid-cols-2">
-                    {passwordStatus.map((requirement) => (
-                      <p
-                        key={requirement.id}
-                        className={`rounded-md px-2 py-1.5 font-medium ${
-                          requirement.isValid
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-slate-50 text-slate-500"
-                        }`}
+                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                    Password reset links expire after 10 minutes for your account security.
+                  </p>
+                  <Link
+                    to="/forgot-password"
+                    className="mt-4 inline-flex w-full items-center justify-center rounded-md bg-blue-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+                  >
+                    Request new reset link
+                  </Link>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label htmlFor="new-password" className="text-sm font-semibold text-slate-700">
+                      New password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="new-password"
+                        name="newPassword"
+                        type={showNewPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                        value={newPassword}
+                        onChange={(e) => {
+                          setNewPassword(e.target.value.trim());
+                          markTouched("newPassword");
+                        }}
+                        onBlur={() => markTouched("newPassword")}
+                        className={`${getInputClass("newPassword")} pr-16`}
+                        placeholder="Create a new password"
+                        aria-invalid={touched.newPassword && Boolean(fieldErrors.newPassword)}
+                        aria-describedby={
+                          touched.newPassword && fieldErrors.newPassword
+                            ? "reset-new-password-error"
+                            : showPasswordRules
+                              ? "reset-password-rules"
+                              : undefined
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword((current) => !current)}
+                        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-blue-700 transition hover:text-blue-900"
+                        aria-label={showNewPassword ? "Hide new password" : "Show new password"}
+                        title={showNewPassword ? "Hide new password" : "Show new password"}
                       >
-                        {requirement.isValid ? "Met: " : "Need: "}
-                        {requirement.label}
+                        {showNewPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      </button>
+                    </div>
+                    {touched.newPassword && fieldErrors.newPassword && (
+                      <p id="reset-new-password-error" className="mt-2 text-xs font-medium text-red-600">
+                        {fieldErrors.newPassword}
                       </p>
-                    ))}
+                    )}
+                    {showPasswordRules && (
+                      <div id="reset-password-rules" className="mt-2 grid gap-1.5 text-[11px] sm:grid-cols-2">
+                        {passwordStatus.map((requirement) => (
+                          <p
+                            key={requirement.id}
+                            className={`rounded-md px-2 py-1.5 font-medium ${
+                              requirement.isValid
+                                ? "bg-emerald-50 text-emerald-700"
+                                : "bg-slate-50 text-slate-500"
+                            }`}
+                          >
+                            {requirement.isValid ? "Met: " : "Need: "}
+                            {requirement.label}
+                          </p>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <div>
-                <label htmlFor="confirm-password" className="text-sm font-semibold text-slate-700">
-                  Confirm password
-                </label>
-                <div className="relative">
-                  <input
-                    id="confirm-password"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value.trim());
-                      markTouched("confirmPassword");
-                    }}
-                    onBlur={() => markTouched("confirmPassword")}
-                    className={`${getInputClass("confirmPassword")} pr-16`}
-                    placeholder="Confirm new password"
-                    aria-invalid={touched.confirmPassword && Boolean(fieldErrors.confirmPassword)}
-                    aria-describedby={
-                      touched.confirmPassword && fieldErrors.confirmPassword
-                        ? "reset-confirm-password-error"
-                        : undefined
-                    }
-                  />
+                  <div>
+                    <label htmlFor="confirm-password" className="text-sm font-semibold text-slate-700">
+                      Confirm password
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="confirm-password"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value.trim());
+                          markTouched("confirmPassword");
+                        }}
+                        onBlur={() => markTouched("confirmPassword")}
+                        className={`${getInputClass("confirmPassword")} pr-16`}
+                        placeholder="Confirm new password"
+                        aria-invalid={touched.confirmPassword && Boolean(fieldErrors.confirmPassword)}
+                        aria-describedby={
+                          touched.confirmPassword && fieldErrors.confirmPassword
+                            ? "reset-confirm-password-error"
+                            : undefined
+                        }
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((current) => !current)}
+                        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-blue-700 transition hover:text-blue-900"
+                        aria-label={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
+                        title={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
+                      >
+                        {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                      </button>
+                    </div>
+                    {touched.confirmPassword && fieldErrors.confirmPassword && (
+                      <p id="reset-confirm-password-error" className="mt-2 text-xs font-medium text-red-600">
+                        {fieldErrors.confirmPassword}
+                      </p>
+                    )}
+                  </div>
+
                   <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((current) => !current)}
-                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-blue-700 transition hover:text-blue-900"
-                    aria-label={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
-                    title={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"}
+                    type="submit"
+                    className="flex w-full items-center justify-center rounded-md bg-blue-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-300"
+                    disabled={loading || !isFormValid}
                   >
-                    {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    {loading ? "Resetting password..." : "Reset password"}
                   </button>
-                </div>
-                {touched.confirmPassword && fieldErrors.confirmPassword && (
-                  <p id="reset-confirm-password-error" className="mt-2 text-xs font-medium text-red-600">
-                    {fieldErrors.confirmPassword}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center rounded-md bg-blue-700 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-blue-300"
-                disabled={loading || !isFormValid}
-              >
-                {loading ? "Resetting password..." : "Reset password"}
-              </button>
+                </>
+              )}
             </form>
           </section>
         </main>
