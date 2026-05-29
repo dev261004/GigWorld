@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
@@ -73,11 +74,149 @@ const buildApplicationText = ({ user, portfolio, projects, skills }) => {
     portfolio.education ? `Education: ${portfolio.education}` : "",
     portfolio.workExperience ? `Work experience: ${portfolio.workExperience}` : "",
     links ? `Links:\n${links}` : "",
-    projectText ? `Project samples:\n${projectText}` : "",
+    projectText ? `Projects:\n${projectText}` : "",
   ]
     .filter(Boolean)
     .join("\n\n");
 };
+
+const CopyIconButton = ({ label, onClick }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    aria-label={label}
+    title={label}
+    className="inline-flex items-center justify-center text-blue-700 transition hover:text-blue-900"
+  >
+    <i className="bx bx-copy text-lg" aria-hidden="true" />
+  </button>
+);
+
+const PortfolioPageShimmer = () => (
+  <div className="min-h-screen bg-[#f7fafc]">
+    <Navbar />
+    <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <section className="rounded-lg border border-blue-400 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-xl shadow-blue-950/20 sm:p-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div>
+            <div className="shimmer-block-dark h-4 w-36 rounded-md" />
+            <div className="shimmer-block-dark mt-4 h-12 w-11/12 max-w-3xl rounded-md" />
+            <div className="shimmer-block-dark mt-3 h-12 w-3/4 max-w-2xl rounded-md" />
+            <div className="shimmer-block-dark mt-6 h-4 w-full max-w-2xl rounded-md" />
+            <div className="shimmer-block-dark mt-3 h-4 w-4/5 max-w-xl rounded-md" />
+          </div>
+
+          <div className="border-t border-sky-300/40 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <div className="flex items-center gap-4">
+              <div className="shimmer-block-dark h-16 w-16 rounded-2xl" />
+              <div className="flex-1">
+                <div className="shimmer-block-dark h-5 w-40 rounded-md" />
+                <div className="shimmer-block-dark mt-3 h-4 w-56 rounded-md" />
+              </div>
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="border-l border-sky-300/35 px-3 first:border-l-0">
+                  <div className="shimmer-block-dark mx-auto h-7 w-10 rounded-md" />
+                  <div className="shimmer-block-dark mx-auto mt-2 h-3 w-14 rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-8">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="grid gap-6">
+            <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="w-full max-w-md">
+                  <div className="shimmer-block h-4 w-36 rounded-md" />
+                  <div className="shimmer-block mt-3 h-8 w-56 rounded-md" />
+                  <div className="shimmer-block mt-4 h-4 w-full rounded-md" />
+                </div>
+                <div className="shimmer-block h-10 w-36 rounded-lg" />
+              </div>
+
+              <div className="mt-7 grid gap-5">
+                <div>
+                  <div className="shimmer-block h-4 w-24 rounded-md" />
+                  <div className="shimmer-block mt-2 h-32 w-full rounded-lg" />
+                </div>
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <div>
+                    <div className="shimmer-block h-4 w-40 rounded-md" />
+                    <div className="shimmer-block mt-2 h-28 w-full rounded-lg" />
+                  </div>
+                  <div>
+                    <div className="shimmer-block h-4 w-36 rounded-md" />
+                    <div className="shimmer-block mt-2 h-28 w-full rounded-lg" />
+                  </div>
+                </div>
+                <div className="grid gap-3">
+                  {[1, 2, 3].map((item) => (
+                    <div key={item} className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+                      <div className="shimmer-block h-11 rounded-lg" />
+                      <div className="shimmer-block h-11 rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end border-t border-blue-200 pt-5">
+                  <div className="shimmer-block h-11 w-44 rounded-lg" />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
+              <div className="shimmer-block h-4 w-24 rounded-md" />
+              <div className="shimmer-block mt-3 h-8 w-44 rounded-md" />
+              <div className="shimmer-block mt-4 h-4 w-72 max-w-full rounded-md" />
+              <div className="mt-6 grid gap-4">
+                <div className="shimmer-block h-11 rounded-lg" />
+                <div className="shimmer-block h-28 rounded-lg" />
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="shimmer-block h-11 rounded-lg" />
+                  <div className="shimmer-block h-11 rounded-lg" />
+                </div>
+                <div className="shimmer-block h-11 w-32 rounded-lg" />
+              </div>
+              <div className="mt-8 grid gap-4">
+                {[1, 2].map((item) => (
+                  <div key={item} className="rounded-lg border border-blue-300 bg-blue-50/40 p-5">
+                    <div className="shimmer-block h-6 w-64 max-w-full rounded-md" />
+                    <div className="shimmer-block mt-4 h-4 w-full rounded-md" />
+                    <div className="shimmer-block mt-3 h-4 w-4/5 rounded-md" />
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <div className="shimmer-block h-8 w-24 rounded-md" />
+                      <div className="shimmer-block h-8 w-28 rounded-md" />
+                      <div className="shimmer-block h-8 w-20 rounded-md" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <aside className="grid gap-6 self-start lg:sticky lg:top-24">
+            {[1, 2, 3].map((item) => (
+              <section key={item} className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
+                <div className="shimmer-block h-4 w-28 rounded-md" />
+                <div className="shimmer-block mt-3 h-8 w-48 rounded-md" />
+                <div className="shimmer-block mt-4 h-4 w-full rounded-md" />
+                <div className="shimmer-block mt-3 h-4 w-3/4 rounded-md" />
+                <div className="mt-5 grid gap-3">
+                  <div className="shimmer-block h-11 rounded-lg" />
+                  <div className="shimmer-block h-11 rounded-lg" />
+                </div>
+              </section>
+            ))}
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+);
 
 const PortfolioPage = () => {
   const [user, setUser] = useState(null);
@@ -112,8 +251,10 @@ const PortfolioPage = () => {
     window.setTimeout(() => setToast(""), 2400);
   };
 
-  const fetchPortfolio = async () => {
-    setIsLoading(true);
+  const fetchPortfolio = async ({ showLoading = true } = {}) => {
+    if (showLoading) {
+      setIsLoading(true);
+    }
     setError("");
 
     try {
@@ -132,7 +273,9 @@ const PortfolioPage = () => {
       console.error("Error fetching portfolio:", requestError);
       setError("Portfolio could not be loaded right now.");
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -206,20 +349,20 @@ const PortfolioPage = () => {
         await axios.put(`${API_BASE_URL}/api/v1/projects/${editingProjectId}`, payload, {
           headers: getAuthHeaders(),
         });
-        showToast("Project sample updated.");
+        showToast("Project updated.");
       } else {
         await axios.post(`${API_BASE_URL}/api/v1/projects/create`, payload, {
           headers: getAuthHeaders(),
         });
-        showToast("Project sample added.");
+        showToast("Project added.");
       }
 
       setProjectForm(emptyProjectForm);
       setEditingProjectId("");
-      await fetchPortfolio();
+      await fetchPortfolio({ showLoading: false });
     } catch (requestError) {
       console.error("Error saving project:", requestError);
-      setError("Project sample could not be saved.");
+      setError("Project could not be saved.");
     } finally {
       setIsSavingProject(false);
     }
@@ -242,11 +385,11 @@ const PortfolioPage = () => {
       await axios.delete(`${API_BASE_URL}/api/v1/projects/${projectId}`, {
         headers: getAuthHeaders(),
       });
-      showToast("Project sample deleted.");
-      await fetchPortfolio();
+      showToast("Project deleted.");
+      await fetchPortfolio({ showLoading: false });
     } catch (requestError) {
       console.error("Error deleting project:", requestError);
-      setError("Project sample could not be deleted.");
+      setError("Project could not be deleted.");
     }
   };
 
@@ -323,26 +466,7 @@ const PortfolioPage = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#f7fafc]">
-        <Navbar />
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <section className="rounded-lg border border-blue-400 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-xl shadow-blue-950/20 sm:p-8">
-            <div className="shimmer-block-dark h-6 w-40 rounded" />
-            <div className="shimmer-block-dark mt-5 h-12 max-w-2xl rounded" />
-            <div className="shimmer-block-dark mt-5 h-5 max-w-xl rounded" />
-          </section>
-          <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            {[1, 2, 3].map((item) => (
-              <div key={item} className="rounded-lg border border-blue-300 bg-white p-5">
-                <div className="shimmer-block h-8 w-24 rounded" />
-                <div className="shimmer-block mt-5 h-20 rounded" />
-              </div>
-            ))}
-          </div>
-        </main>
-      </div>
-    );
+    return <PortfolioPageShimmer />;
   }
 
   return (
@@ -364,7 +488,7 @@ const PortfolioPage = () => {
                 Build reusable proof for every freelance application.
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300">
-                Keep your resume, profile details, links, and project samples ready to copy or download when source websites ask for them.
+                Keep your resume, profile details, links, and projects ready to copy or download when source websites ask for them.
               </p>
             </div>
 
@@ -425,7 +549,10 @@ const PortfolioPage = () => {
 
                 <div className="mt-6 grid gap-5">
                   <div>
-                    <label htmlFor="portfolio-bio" className="text-sm font-black uppercase text-slate-700">Bio</label>
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="portfolio-bio" className="text-sm font-black uppercase text-slate-700">Bio</label>
+                      <CopyIconButton label="Copy bio" onClick={() => copyToClipboard("Bio", portfolio.bio)} />
+                    </div>
                     <textarea
                       id="portfolio-bio"
                       value={portfolio.bio || ""}
@@ -433,18 +560,14 @@ const PortfolioPage = () => {
                       className="mt-2 min-h-32 w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                       placeholder="Write a short freelancer bio clients can understand quickly."
                     />
-                    <button
-                      type="button"
-                      onClick={() => copyToClipboard("Bio", portfolio.bio)}
-                      className="mt-2 text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8"
-                    >
-                      Copy bio -&gt;
-                    </button>
                   </div>
 
                   <div className="grid gap-5 lg:grid-cols-2">
                     <div>
-                      <label htmlFor="portfolio-education" className="text-sm font-black uppercase text-slate-700">Education / qualification</label>
+                      <div className="flex items-center gap-2">
+                        <label htmlFor="portfolio-education" className="text-sm font-black uppercase text-slate-700">Education / qualification</label>
+                        <CopyIconButton label="Copy education" onClick={() => copyToClipboard("Education", portfolio.education)} />
+                      </div>
                       <textarea
                         id="portfolio-education"
                         value={portfolio.education || ""}
@@ -452,16 +575,15 @@ const PortfolioPage = () => {
                         className="mt-2 min-h-28 w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                         placeholder="Degree, certification, bootcamp, or relevant learning."
                       />
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard("Education", portfolio.education)}
-                        className="mt-2 text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8"
-                      >
-                        Copy education -&gt;
-                      </button>
                     </div>
                     <div>
-                      <label htmlFor="portfolio-work-experience" className="text-sm font-black uppercase text-slate-700">Work experience</label>
+                      <div className="flex items-center gap-2">
+                        <label htmlFor="portfolio-work-experience" className="text-sm font-black uppercase text-slate-700">Work experience</label>
+                        <CopyIconButton
+                          label="Copy work experience"
+                          onClick={() => copyToClipboard("Work experience", portfolio.workExperience)}
+                        />
+                      </div>
                       <textarea
                         id="portfolio-work-experience"
                         value={portfolio.workExperience || ""}
@@ -469,13 +591,6 @@ const PortfolioPage = () => {
                         className="mt-2 min-h-28 w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                         placeholder="Past roles, freelance work, outcomes, or relevant experience."
                       />
-                      <button
-                        type="button"
-                        onClick={() => copyToClipboard("Work experience", portfolio.workExperience)}
-                        className="mt-2 text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8"
-                      >
-                        Copy work experience -&gt;
-                      </button>
                     </div>
                   </div>
 
@@ -530,7 +645,7 @@ const PortfolioPage = () => {
               <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-sm font-black uppercase text-blue-700">Project samples</p>
+                    <p className="text-sm font-black uppercase text-blue-700">Projects</p>
                     <h2 className="mt-2 text-2xl font-black text-slate-950">Proof of work</h2>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
                       Add examples you can copy into external application forms.
@@ -587,7 +702,7 @@ const PortfolioPage = () => {
                     disabled={isSavingProject}
                     className="justify-self-start rounded-lg bg-slate-950 px-5 py-3 text-sm font-black text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                   >
-                    {isSavingProject ? "Saving..." : editingProjectId ? "Update project sample" : "Add project sample"}
+                    {isSavingProject ? "Saving..." : editingProjectId ? "Update project" : "Add project"}
                   </button>
                 </form>
 
@@ -603,13 +718,10 @@ const PortfolioPage = () => {
                               <p className="mt-2 text-sm leading-6 text-slate-600">{project.description}</p>
                             </div>
                             <div className="flex shrink-0 flex-wrap gap-2">
-                              <button
-                                type="button"
-                                onClick={() => copyToClipboard("Project sample", projectText)}
-                                className="rounded-md border border-blue-300 bg-white px-3 py-2 text-xs font-black text-blue-700"
-                              >
-                                Copy
-                              </button>
+                              <CopyIconButton
+                                label="Copy project"
+                                onClick={() => copyToClipboard("Project", projectText)}
+                              />
                               <button
                                 type="button"
                                 onClick={() => handleEditProject(project)}
@@ -650,7 +762,7 @@ const PortfolioPage = () => {
                     })
                   ) : (
                     <div className="rounded-lg border border-dashed border-blue-300 bg-blue-50/50 p-6 text-sm font-semibold text-slate-600">
-                      No project samples yet. Add your strongest proof of work first.
+                      No projects yet. Add your strongest proof of work first.
                     </div>
                   )}
                 </div>
@@ -732,8 +844,11 @@ const PortfolioPage = () => {
               <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-black uppercase text-blue-700">Skills</p>
-                    <h2 className="mt-2 text-2xl font-black text-slate-950">From preferences</h2>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-black uppercase text-blue-700">Skills</p>
+                      <CopyIconButton label="Copy skills" onClick={() => copyToClipboard("Skills", skills.join(", "))} />
+                    </div>
+                    <p className="mt-1 text-xs font-bold text-slate-500">From Gig Preferences</p>
                   </div>
                   <Link
                     to="/profile"
@@ -755,13 +870,6 @@ const PortfolioPage = () => {
                     Add skills in Gig Preferences to reuse them here.
                   </p>
                 )}
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard("Skills", skills.join(", "))}
-                  className="mt-5 text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8"
-                >
-                  Copy skills -&gt;
-                </button>
               </section>
             </aside>
           </div>

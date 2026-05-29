@@ -56,13 +56,91 @@ const profileActions = [
   },
 ];
 
-const accountLinks = [
-  { label: "Update account details", to: "/update-account", icon: "bx-user-pin" },
-  { label: "Contact support", to: "/contact", icon: "bx-message-square-detail" },
-];
+const ProfilePageShimmer = () => (
+  <div className="min-h-screen bg-[#f7fafc] text-slate-950">
+    <Navbar />
+
+    <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <section className="rounded-lg border border-blue-400 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 p-4 text-white shadow-xl shadow-blue-950/20 sm:p-5 lg:p-6">
+        <div className="shimmer-block-dark h-5 w-40 rounded-md" />
+        <div className="mt-4 grid gap-8 sm:mt-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
+            <div className="shimmer-block-dark h-24 w-24 shrink-0 rounded-2xl" />
+            <div className="w-full">
+              <div className="shimmer-block-dark h-4 w-40 rounded-md" />
+              <div className="shimmer-block-dark mt-5 h-12 w-11/12 max-w-3xl rounded-md" />
+              <div className="shimmer-block-dark mt-3 h-12 w-3/5 max-w-xl rounded-md" />
+              <div className="shimmer-block-dark mt-5 h-4 w-full max-w-2xl rounded-md" />
+              <div className="shimmer-block-dark mt-3 h-4 w-2/3 max-w-xl rounded-md" />
+            </div>
+          </div>
+
+          <div className="border-t border-sky-300/40 pt-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0">
+            <div className="shimmer-block-dark h-4 w-36 rounded-md" />
+            <div className="mt-5 grid gap-4">
+              {[1, 2, 3].map((item) => (
+                <div key={item}>
+                  <div className="shimmer-block-dark h-4 w-24 rounded-md" />
+                  <div className="shimmer-block-dark mt-2 h-5 w-48 max-w-full rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-10">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="rounded-lg border border-blue-300 bg-white p-5 shadow-sm shadow-blue-950/5">
+              <div className="shimmer-block h-11 w-11 rounded-lg" />
+              <div className="shimmer-block mt-5 h-6 w-48 max-w-full rounded-md" />
+              <div className="shimmer-block mt-4 h-4 w-full rounded-md" />
+              <div className="shimmer-block mt-3 h-4 w-4/5 rounded-md" />
+              <div className="shimmer-block mt-5 h-4 w-28 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="pb-10">
+        <div className="grid gap-6">
+          <div className="rounded-lg border border-blue-300 bg-white p-5">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="w-full max-w-2xl">
+                <div className="shimmer-block h-4 w-32 rounded-md" />
+                <div className="shimmer-block mt-3 h-8 w-80 max-w-full rounded-md" />
+                <div className="shimmer-block mt-4 h-4 w-full rounded-md" />
+              </div>
+              <div className="shimmer-block h-16 w-24 rounded-lg" />
+            </div>
+          </div>
+
+          {[1, 2, 3, 4].map((item) => (
+            <div key={item} className="rounded-lg border border-blue-300 bg-white p-5">
+              <div className="shimmer-block h-4 w-44 rounded-md" />
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5, 6].map((chip) => (
+                  <div key={chip} className="shimmer-block h-10 w-28 rounded-full" />
+                ))}
+              </div>
+            </div>
+          ))}
+
+          <div className="flex justify-end">
+            <div className="shimmer-block h-12 w-52 rounded-lg" />
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <Footer />
+  </div>
+);
 
 const UserProfilePage = () => {
   const [profileUser, setProfileUser] = useState(() => getStoredUser());
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
   const [preferenceMessage, setPreferenceMessage] = useState("");
   const profile = getProfileFromUser(profileUser);
@@ -73,6 +151,7 @@ const UserProfilePage = () => {
         const token = localStorage.getItem("authToken");
 
         if (!token) {
+          setIsLoadingProfile(false);
           return;
         }
 
@@ -86,6 +165,8 @@ const UserProfilePage = () => {
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
+      } finally {
+        setIsLoadingProfile(false);
       }
     };
 
@@ -115,6 +196,10 @@ const UserProfilePage = () => {
       setIsSavingPreferences(false);
     }
   };
+
+  if (isLoadingProfile) {
+    return <ProfilePageShimmer />;
+  }
 
   return (
     <div className="min-h-screen bg-[#f7fafc] text-slate-950">
@@ -208,28 +293,6 @@ const UserProfilePage = () => {
           />
         </section>
 
-        <section className="border-y border-blue-300 bg-white">
-          <div className="py-10">
-            <aside className="rounded-lg border border-blue-300 bg-slate-50 p-6">
-              <p className="text-sm font-black uppercase text-blue-700">Account actions</p>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {accountLinks.map((link) => (
-                  <Link
-                    key={link.to}
-                    to={link.to}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-800 transition hover:border-blue-300 hover:text-blue-700"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <i className={`bx ${link.icon} text-lg text-blue-700`} aria-hidden="true" />
-                      {link.label}
-                    </span>
-                    <span aria-hidden="true">-&gt;</span>
-                  </Link>
-                ))}
-              </div>
-            </aside>
-          </div>
-        </section>
       </main>
 
       <Footer />

@@ -24,7 +24,6 @@ const popularSkills = ["React", "Python", "Logo Design", "Figma", "Content Writi
 const experienceOptions = ["Beginner", "Intermediate", "Experienced", "Expert"];
 const workTypeOptions = ["Remote", "Part-time", "Full-time", "Fixed-price", "Hourly", "Short-term", "Long-term"];
 const budgetOptions = ["Any budget", "Under $100", "$100 - $500", "$500 - $1000", "$1000+"];
-const genderOptions = ["Prefer not to say", "Female", "Male", "Non-binary", "Other"];
 
 const mergePreferences = (preferences = {}) => ({
   ...emptyPreferences,
@@ -60,10 +59,9 @@ const FieldLabel = ({ children, optional }) => (
   </label>
 );
 
-const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, submitLabel = "Save preferences", showOptional = true }) => {
+const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, submitLabel = "Save preferences" }) => {
   const [preferences, setPreferences] = useState(() => mergePreferences(initialPreferences));
   const [customSkill, setCustomSkill] = useState("");
-  const [customLanguage, setCustomLanguage] = useState("");
   const [touched, setTouched] = useState(false);
 
   useEffect(() => {
@@ -77,12 +75,7 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
       preferences.skills.length,
       preferences.experienceLevel,
       preferences.workTypes.length,
-      preferences.education,
-      preferences.currentRole,
-      preferences.workExperience,
       preferences.preferredBudget,
-      preferences.languages.length,
-      preferences.location,
     ];
     const completedFields = fields.filter(Boolean).length;
     return Math.round((completedFields / fields.length) * 100);
@@ -277,94 +270,6 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
           </div>
         </div>
       </section>
-
-      {showOptional && (
-        <section className="rounded-lg border border-blue-300 bg-white p-5">
-          <FieldLabel optional>Additional profile details</FieldLabel>
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <input
-              type="text"
-              value={preferences.education}
-              onChange={(event) => updateField("education", event.target.value)}
-              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-              placeholder="Education details"
-            />
-            <input
-              type="text"
-              value={preferences.currentRole}
-              onChange={(event) => updateField("currentRole", event.target.value)}
-              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-              placeholder="Current job role"
-            />
-            <input
-              type="text"
-              value={preferences.workExperience}
-              onChange={(event) => updateField("workExperience", event.target.value)}
-              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-              placeholder="Work experience"
-            />
-            <input
-              type="text"
-              value={preferences.location}
-              onChange={(event) => updateField("location", event.target.value)}
-              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-              placeholder="Location or time zone"
-            />
-            <select
-              value={preferences.gender}
-              onChange={(event) => updateField("gender", event.target.value)}
-              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-            >
-              <option value="">Gender, optional</option>
-              {genderOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              min="13"
-              max="100"
-              value={preferences.age}
-              onChange={(event) => updateField("age", event.target.value)}
-              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-              placeholder="Age, optional"
-            />
-          </div>
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <input
-              type="text"
-              value={customLanguage}
-              onChange={(event) => setCustomLanguage(event.target.value)}
-              className="w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-              placeholder="Add a language"
-            />
-            <button
-              type="button"
-              onClick={() => {
-                addListValue("languages", customLanguage);
-                setCustomLanguage("");
-              }}
-              className="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-800"
-            >
-              Add
-            </button>
-          </div>
-          {preferences.languages.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              {preferences.languages.map((language) => (
-                <button
-                  key={language}
-                  type="button"
-                  onClick={() => removeListValue("languages", language)}
-                  className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700"
-                >
-                  {language} x
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-semibold text-slate-500">

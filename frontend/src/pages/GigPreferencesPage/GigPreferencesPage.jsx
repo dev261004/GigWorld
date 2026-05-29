@@ -77,7 +77,6 @@ const GigPreferencesPage = () => {
             isSaving={isSaving}
             onSave={savePreferences}
             submitLabel="Show my gigs"
-            showOptional={false}
           />
         </section>
       </main>
