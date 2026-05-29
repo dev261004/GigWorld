@@ -54,13 +54,6 @@ const profileActions = [
     icon: "bx-briefcase-alt-2",
     accent: "bg-sky-50 text-sky-700 border-sky-200",
   },
-  {
-    title: "Projects",
-    description: "Organize project links and previous work you may want to reuse.",
-    to: "/projects",
-    icon: "bx-folder-open",
-    accent: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  },
 ];
 
 const accountLinks = [
@@ -127,9 +120,9 @@ const UserProfilePage = () => {
     <div className="min-h-screen bg-[#f7fafc] text-slate-950">
       <Navbar />
 
-      <main>
-        <section className="border-b border-blue-300 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <section className="rounded-lg border border-blue-400 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 p-4 text-white shadow-xl shadow-blue-950/20 sm:p-5 lg:p-6">
+          <div>
             <Link
               to="/"
               className="inline-flex items-center gap-2 text-sm font-black text-sky-200 transition hover:text-white"
@@ -138,7 +131,7 @@ const UserProfilePage = () => {
               Back to homepage
             </Link>
           </div>
-          <div className="mx-auto grid max-w-7xl gap-8 px-4 pb-10 text-white sm:px-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-8 lg:pb-14">
+          <div className="mt-4 grid gap-8 sm:mt-5 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
               <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border border-sky-300/40 bg-white/10 text-5xl font-black text-white shadow-2xl shadow-blue-950/40">
                 {profile.initial}
@@ -174,8 +167,8 @@ const UserProfilePage = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="py-10">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {profileActions.map((action) => (
               <Link
                 key={action.to}
@@ -195,7 +188,7 @@ const UserProfilePage = () => {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pb-10 sm:px-6 lg:px-8">
+        <section className="pb-10">
           {preferenceMessage && (
             <div
               className={`mb-5 rounded-lg border px-4 py-3 text-sm font-bold ${
@@ -216,7 +209,7 @@ const UserProfilePage = () => {
         </section>
 
         <section className="border-y border-blue-300 bg-white">
-          <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="py-10">
             <aside className="rounded-lg border border-blue-300 bg-slate-50 p-6">
               <p className="text-sm font-black uppercase text-blue-700">Account actions</p>
               <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
