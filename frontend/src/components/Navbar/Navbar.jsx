@@ -1,22 +1,47 @@
 import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../BrandLogo/BrandLogo";
+
+const getProfileInitial = (token) => {
+  try {
+    const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const decodedUser = token ? jwtDecode(token) : {};
+    const displayName =
+      savedUser?.name ||
+      savedUser?.fullName ||
+      savedUser?.username ||
+      decodedUser?.name ||
+      decodedUser?.fullName ||
+      decodedUser?.username ||
+      decodedUser?.email ||
+      "U";
+
+    return String(displayName).trim().charAt(0).toUpperCase() || "U";
+  } catch {
+    return "U";
+  }
+};
 
 const Navbar = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGigsMenuOpen, setIsGigsMenuOpen] = useState(false);
+  const [profileInitial, setProfileInitial] = useState("U");
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
       setIsAuthenticated(true);
+      setProfileInitial(getProfileInitial(token));
     }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("user");
     setIsAuthenticated(false);
+    setProfileInitial("U");
     navigate("/");
   };
 
@@ -70,14 +95,17 @@ const Navbar = () => {
                 </div>
               )}
             </li>
-            <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/pricing">Pricing</Link></li>
             <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/contact">Contact</Link></li>
           </ul>
           <div className="my-4 flex items-center gap-4 lg:my-0 lg:ml-auto">
             {isAuthenticated ? (
               <div className="flex items-center justify-center gap-4">
-                <Link to="/profile" className="rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                  <img src="./image.png" alt="User Profile" className="h-10 w-10 rounded-full object-cover transition-all duration-300 ease-in-out hover:scale-105" />
+                <Link
+                  to="/profile"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-emerald-600 text-sm font-black uppercase text-white shadow-lg shadow-blue-700/20 transition-all duration-300 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-label="User profile"
+                >
+                  {profileInitial}
                 </Link>
                 <button onClick={handleLogout} className="whitespace-nowrap rounded-lg bg-blue-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800">Logout</button>
               </div>

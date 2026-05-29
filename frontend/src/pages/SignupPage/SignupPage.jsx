@@ -197,7 +197,10 @@ const SignupPage = () => {
               <Link to="/" className="flex items-center gap-3 font-black text-slate-950">
                 <BrandLogo />
               </Link>
-              <Link to="/" className="text-sm font-medium text-slate-500 transition hover:text-blue-700">
+              <Link to="/" className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-bold text-blue-700 transition hover:bg-blue-50 hover:text-blue-900">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Back home
               </Link>
             </div>
@@ -232,7 +235,7 @@ const SignupPage = () => {
                     onChange={handleChange}
                     onBlur={() => markTouched("fullName")}
                     className={getInputClass("fullName")}
-                    placeholder="Name"
+                    placeholder="Dev Agrawal"
                     aria-invalid={touched.fullName && Boolean(fieldErrors.fullName)}
                     aria-describedby={
                       touched.fullName && fieldErrors.fullName ? "signup-full-name-error" : undefined
@@ -259,7 +262,7 @@ const SignupPage = () => {
                     onChange={handleChange}
                     onBlur={() => markTouched("username")}
                     className={getInputClass("username")}
-                    placeholder="janedoe"
+                    placeholder="dev123"
                     aria-invalid={touched.username && Boolean(fieldErrors.username)}
                     aria-describedby={
                       touched.username && fieldErrors.username ? "signup-username-error" : undefined

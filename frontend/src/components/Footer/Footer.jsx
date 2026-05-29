@@ -2,8 +2,7 @@ import { Link } from "react-router-dom";
 
 const footerLinks = [
   { label: "Home", to: "/" },
-  { label: "Browse Jobs", to: "/work" },
-  { label: "Pricing", to: "/pricing" },
+  { label: "Browse gig", to: "/work" },
   { label: "Contact", to: "/contact" },
 ];
 
@@ -21,14 +20,6 @@ const Footer = () => (
           <p className="mt-5 max-w-md text-sm leading-6 text-slate-300">
             One modern workspace for discovering freelance jobs from the platforms freelancers already trust.
           </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-            <Link to="/signup" className="inline-flex items-center justify-center rounded-lg bg-white px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-sky-100">
-              Create account
-            </Link>
-            <Link to="/work" className="inline-flex items-center justify-center rounded-lg border border-white/20 px-5 py-3 text-sm font-bold text-white transition hover:border-sky-300 hover:text-sky-200">
-              View jobs
-            </Link>
-          </div>
         </div>
 
         <div>

@@ -8,12 +8,6 @@ const inputClass =
 const inputErrorClass = "border-red-300 focus:border-red-500 focus:ring-red-500/20";
 const emailPattern = /^[a-z0-9._%+-]+@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,24}$/;
 
-const workflowItems = [
-  "Search high-signal freelance gigs from one workspace",
-  "Keep profile, portfolio, and project details close",
-  "Return to saved applications without losing momentum",
-];
-
 const stats = [
   { value: "10+", label: "Gig sources" },
   { value: "24/7", label: "Fresh listings" },
@@ -104,6 +98,9 @@ const SigninPage = () => {
 
       if (token) {
         localStorage.setItem("authToken", token);
+        if (data?.data?.user) {
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+        }
         navigate("/work");
       } else {
         setError("Sign in succeeded, but no access token was returned.");
@@ -145,16 +142,6 @@ const SigninPage = () => {
             ))}
           </div>
 
-          <div className="mt-10 max-w-xl border-l border-blue-200 pl-5">
-            {workflowItems.map((item, index) => (
-              <div key={item} className="mb-5 flex gap-3 last:mb-0">
-                <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700">
-                  {index + 1}
-                </span>
-                <p className="text-sm leading-6 text-slate-600">{item}</p>
-              </div>
-            ))}
-          </div>
         </aside>
 
         <main className="flex items-center justify-center py-6">
@@ -163,7 +150,10 @@ const SigninPage = () => {
               <Link to="/" className="flex items-center gap-3 font-black text-slate-950 lg:hidden">
                 <BrandLogo />
               </Link>
-              <Link to="/" className="ml-auto text-sm font-medium text-slate-500 transition hover:text-blue-700">
+              <Link to="/" className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm font-bold text-blue-700 transition hover:bg-blue-50 hover:text-blue-900">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                </svg>
                 Back home
               </Link>
             </div>
