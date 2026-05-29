@@ -35,6 +35,76 @@ const userSchema = new Schema(
         },
         resetPasswordToken: {type:String},
   resetPasswordExpires: {type:Date},
+        gigPreferences: {
+            currentStatus: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            categories: {
+                type: [String],
+                default: []
+            },
+            skills: {
+                type: [String],
+                default: []
+            },
+            experienceLevel: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            workTypes: {
+                type: [String],
+                default: []
+            },
+            education: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            currentRole: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            workExperience: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            preferredBudget: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            languages: {
+                type: [String],
+                default: []
+            },
+            location: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            gender: {
+                type: String,
+                trim: true,
+                default: ""
+            },
+            age: {
+                type: Number,
+                min: 13,
+                max: 100
+            },
+            onboardingCompleted: {
+                type: Boolean,
+                default: false
+            },
+            updatedAt: {
+                type: Date
+            }
+        },
 
     },
     {

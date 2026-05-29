@@ -101,7 +101,8 @@ const SigninPage = () => {
         if (data?.data?.user) {
           localStorage.setItem("user", JSON.stringify(data.data.user));
         }
-        navigate("/work");
+        const onboardingIsComplete = Boolean(data?.data?.user?.gigPreferences?.onboardingCompleted);
+        navigate(onboardingIsComplete ? "/work" : "/gig-preferences");
       } else {
         setError("Sign in succeeded, but no access token was returned.");
       }

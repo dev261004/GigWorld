@@ -7,7 +7,8 @@ import {
     changeCurrentPassword, 
     getCurrentUser, 
 
-    updateAccountDetails
+    updateAccountDetails,
+    updateGigPreferences
 } from "../controllers/user.controllers.js";
 
 import { verifyJWT } from "../middlewares/auth.js";
@@ -25,6 +26,7 @@ router.route("/refresh-token").post(refreshAccessToken)
 //router.route("/forgot-password").post(verifyJWT, changeCurrentPassword)
 router.route("/current-user").get(verifyJWT, getCurrentUser)
 router.route("/update-account").put(verifyJWT, updateAccountDetails)
+router.route("/gig-preferences").put(verifyJWT, updateGigPreferences)
 
 
 export default router

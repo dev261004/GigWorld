@@ -256,6 +256,76 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
     .json(new ApiResponse(200, user, "Account details updated successfully"))
 });
 
+const cleanString = (value) => (typeof value === "string" ? value.trim() : "");
+
+const cleanStringArray = (value) => {
+    if (!Array.isArray(value)) {
+        return [];
+    }
+
+    return [...new Set(value.map((item) => cleanString(item)).filter(Boolean))];
+};
+
+const updateGigPreferences = asyncHandler(async(req, res) => {
+    const {
+        currentStatus,
+        categories,
+        skills,
+        experienceLevel,
+        workTypes,
+        education,
+        currentRole,
+        workExperience,
+        preferredBudget,
+        languages,
+        location,
+        gender,
+        age,
+        onboardingCompleted
+    } = req.body;
+
+    const parsedAge = age === "" || age === undefined || age === null ? undefined : Number(age);
+
+    if (parsedAge !== undefined && (Number.isNaN(parsedAge) || parsedAge < 13 || parsedAge > 100)) {
+        throw new ApiError(400, "Age must be between 13 and 100");
+    }
+
+    const gigPreferences = {
+        currentStatus: cleanString(currentStatus),
+        categories: cleanStringArray(categories),
+        skills: cleanStringArray(skills),
+        experienceLevel: cleanString(experienceLevel),
+        workTypes: cleanStringArray(workTypes),
+        education: cleanString(education),
+        currentRole: cleanString(currentRole),
+        workExperience: cleanString(workExperience),
+        preferredBudget: cleanString(preferredBudget),
+        languages: cleanStringArray(languages),
+        location: cleanString(location),
+        gender: cleanString(gender),
+        onboardingCompleted: Boolean(onboardingCompleted),
+        updatedAt: new Date()
+    };
+
+    if (parsedAge !== undefined) {
+        gigPreferences.age = parsedAge;
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user?._id,
+        {
+            $set: {
+                gigPreferences
+            }
+        },
+        {new: true}
+    ).select("-password -refreshToken")
+
+    return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Gig preferences updated successfully"))
+});
+
 export {
     registerUser,
     loginUser,
@@ -264,5 +334,6 @@ export {
     changeCurrentPassword,
     getCurrentUser,
     updateAccountDetails,
+    updateGigPreferences,
 
 }
