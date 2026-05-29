@@ -1,112 +1,238 @@
-import { useState } from 'react';
+import { useMemo, useState } from "react";
+
+const contactMethods = [
+  {
+    label: "Support",
+    value: "Help with your account or saved gigs",
+  },
+  {
+    label: "Sources",
+    value: "Suggest a freelance platform to track",
+  },
+  {
+    label: "Partnerships",
+    value: "Talk about posting or surfacing opportunities",
+  },
+];
+
+const initialFormData = {
+  name: "",
+  email: "",
+  question: "",
+};
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const Contact = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    question: ''
-  });
+  const [formData, setFormData] = useState(initialFormData);
+  const [touched, setTouched] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [statusType, setStatusType] = useState("success");
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const fieldErrors = useMemo(() => {
+    const errors = {};
+    const name = formData.name.trim();
+    const email = formData.email.trim();
+    const question = formData.question.trim();
+
+    if (!name) {
+      errors.name = "Name is required.";
+    }
+
+    if (!email) {
+      errors.email = "Email is required.";
+    } else if (!emailPattern.test(email)) {
+      errors.email = "Enter a valid email address.";
+    }
+
+    if (!question) {
+      errors.question = "Message is required.";
+    } else if (question.length < 10) {
+      errors.question = "Message should be at least 10 characters.";
+    }
+
+    return errors;
+  }, [formData]);
+
+  const isFormValid = Object.keys(fieldErrors).length === 0;
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((current) => ({
+      ...current,
+      [name]: name === "email" ? value.trim().toLowerCase() : value,
+    }));
+    setStatusMessage("");
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Send the form data via POST request to the API
-    fetch('http://localhost:2610/api/v1/contact/submit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(formData)
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        // Handle the response from the API
-        alert("Our Customer Care Will Contact Soon ")
-        console.log(data);
-      })
-      .catch((error) => {
-        // Handle any errors
-        console.error(error);
+  const handleBlur = (field) => {
+    setTouched((current) => ({ ...current, [field]: true }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setTouched({ name: true, email: true, question: true });
+
+    if (!isFormValid) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusMessage("");
+
+    try {
+      const response = await fetch("http://localhost:2610/api/v1/contact/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          question: formData.question.trim(),
+        }),
       });
+
+      if (!response.ok) {
+        throw new Error("Unable to submit contact request");
+      }
+
+      setFormData(initialFormData);
+      setTouched({});
+      setStatusType("success");
+      setStatusMessage("Message sent. The GigWorld team will get back to you soon.");
+    } catch (error) {
+      console.error(error);
+      setStatusType("error");
+      setStatusMessage("Unable to send your message right now. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getInputClass = (field) => {
+    const hasError = touched[field] && fieldErrors[field];
+
+    return `mt-2 block w-full rounded-lg border px-4 py-3 text-sm font-semibold text-slate-950 placeholder:text-slate-400 shadow-sm transition focus:outline-none focus:ring-2 ${
+      hasError
+        ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-red-500/20"
+        : "border-blue-200 bg-white focus:border-blue-600 focus:ring-blue-600/20"
+    }`;
   };
 
   return (
-    <div className="sm:p-10 my-auto">
-      <section className="mx-auto max-w-screen-xl md:rounded-md md:border md:shadow-lg">
-        <div className="grid grid-cols-4 text-gray-800 lg:grid-cols-3">
-          <div className="col-span-4 bg-gray-50 px-8 py-10 text-gray-800 md:col-span-2 md:border-r md:px-10 md:py-12 lg:col-span-1">
-            <h2 className="mb-8 text-2xl font-black">Contact me</h2>
-            <ul>
-              <li className="mb-6 flex items-start text-left">
-                {/* ...facebook logo */}
-              </li>
-              <li className="my-6 flex items-center text-left">
-                {/* ... instagram logo*/}
-              </li>
-              <li className="my-6 flex items-center text-left">
-                {/* ... twitter logo*/}
-              </li>
-            </ul>
+    <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <div className="grid overflow-hidden rounded-lg border border-blue-300 bg-white shadow-2xl shadow-blue-100/70 lg:grid-cols-[0.92fr_1.08fr]">
+        <aside className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 p-6 text-white sm:p-8 lg:p-10">
+          <p className="text-sm font-black uppercase text-sky-300">Contact GigWorld</p>
+          <h1 className="mt-4 text-4xl font-black leading-tight sm:text-5xl">
+            Tell us what would make your gig search smoother.
+          </h1>
+          <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
+            Questions, platform requests, feedback, or support needs are welcome. Share the context and we will route it to the right place.
+          </p>
+
+          <div className="mt-8 grid gap-4">
+            {contactMethods.map((method) => (
+              <div key={method.label} className="border-t border-sky-300/30 pt-4">
+                <p className="text-sm font-black text-white">{method.label}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-300">{method.value}</p>
+              </div>
+            ))}
           </div>
-          <div className="order-first col-span-4 max-w-screen-md px-8 py-10 md:order-last md:col-span-2 md:px-10 md:py-12">
-            <h2 className="mb-8 text-2xl font-black">Get in touch</h2>
-            <p className="mt-2 mb-4 font-sans text-sm tracking-normal">
-              Don't be shy to ask me a question.
-            </p>
-            <form onSubmit={handleSubmit}>
-              <div className="md:col-gap-4 mb-5 grid md:grid-cols-2">
+        </aside>
+
+        <div className="p-6 sm:p-8 lg:p-10">
+          <p className="text-sm font-black uppercase text-blue-700">Send a message</p>
+          <h2 className="mt-2 text-3xl font-black text-slate-950">How can we help?</h2>
+          <p className="mt-3 text-sm leading-6 text-slate-500">
+            Keep it short or detailed. We will use your email only to reply to this request.
+          </p>
+
+          {statusMessage && (
+            <div
+              className={`mt-6 rounded-lg border px-4 py-3 text-sm font-bold ${
+                statusType === "error"
+                  ? "border-red-200 bg-red-50 text-red-700"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              }`}
+              role="status"
+            >
+              {statusMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="mt-7 grid gap-5">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <label className="block">
+                <span className="text-sm font-bold text-slate-700">Name</span>
                 <input
-                  className="col-span-1 w-full border-b py-3 text-sm outline-none focus:border-b-2 focus:border-black"
+                  className={getInputClass("name")}
                   type="text"
-                  placeholder="Name"
+                  placeholder="Dev Agrawal"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
+                  onBlur={() => handleBlur("name")}
+                  aria-invalid={touched.name && Boolean(fieldErrors.name)}
                 />
+                {touched.name && fieldErrors.name && (
+                  <p className="mt-2 text-xs font-semibold text-red-600">{fieldErrors.name}</p>
+                )}
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-bold text-slate-700">Email</span>
                 <input
-                  className="col-span-1 w-full border-b py-3 text-sm outline-none focus:border-b-2 focus:border-black"
+                  className={getInputClass("email")}
                   type="email"
-                  placeholder="Email"
+                  placeholder="you@example.com"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
+                  onBlur={() => handleBlur("email")}
+                  aria-invalid={touched.email && Boolean(fieldErrors.email)}
                 />
-              </div>
+                {touched.email && fieldErrors.email && (
+                  <p className="mt-2 text-xs font-semibold text-red-600">{fieldErrors.email}</p>
+                )}
+              </label>
+            </div>
+
+            <label className="block">
+              <span className="text-sm font-bold text-slate-700">Message</span>
               <textarea
-                className="mb-10 w-full resize-y whitespace-pre-wrap border-b py-3 text-sm outline-none focus:border-b-2 focus:border-black"
-                id=""
+                className={`${getInputClass("question")} min-h-40 resize-y`}
                 rows={6}
-                placeholder="Question"
+                placeholder="Tell us what you need help with..."
                 name="question"
                 value={formData.question}
                 onChange={handleChange}
+                onBlur={() => handleBlur("question")}
+                aria-invalid={touched.question && Boolean(fieldErrors.question)}
               />
+              {touched.question && fieldErrors.question && (
+                <p className="mt-2 text-xs font-semibold text-red-600">{fieldErrors.question}</p>
+              )}
+            </label>
+
+            <div className="flex flex-col gap-3 border-t border-blue-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold text-slate-500">
+                Average response: 1-2 business days.
+              </p>
               <button
                 type="submit"
-                className="group flex cursor-pointer items-center rounded-xl bg-blue-600 bg-none px-8 py-4 text-center font-semibold leading-tight text-white"
+                disabled={isSubmitting || !isFormValid}
+                className="inline-flex items-center justify-center rounded-lg bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-sm transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-300"
               >
-                Send
-                <svg
-                  className="group-hover:ml-8 ml-4 transition-all"
-                  xmlns="http://www.w3.org/2000/svg"
-                  aria-hidden="true"
-                  role="img"
-                  width="1em"
-                  height="1em"
-                  preserveAspectRatio="xMidYMid meet"
-                  viewBox="0 0 24 24"
-                >
-                  {/* ... send button logo*/}
-                </svg>
+                {isSubmitting ? "Sending..." : "Send message"}
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 };
 
