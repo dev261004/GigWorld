@@ -19,6 +19,36 @@ const ensureDirectory = (directoryPath) => {
 };
 
 const cleanString = (value) => (typeof value === "string" ? value.trim() : "");
+const formatEducationYear = (value = "") => {
+    const cleanedValue = cleanString(value);
+
+    if (/^\d{4}-\d{2}$/.test(cleanedValue)) {
+        const [year, month] = cleanedValue.split("-").map(Number);
+        return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric"
+        });
+    }
+
+    return cleanedValue;
+};
+const cleanMarksValue = (value = "") => cleanString(value).replace(/\s*(%|cgpa)$/i, "").trim();
+const normalizeMarksType = (value = "", marks = "") => {
+    if (value === "cgpa" || /cgpa/i.test(marks)) {
+        return "cgpa";
+    }
+
+    return "percentage";
+};
+const formatMarks = (marks = "", marksType = "percentage") => {
+    const cleanedMarks = cleanMarksValue(marks);
+
+    if (!cleanedMarks) {
+        return "";
+    }
+
+    return marksType === "cgpa" ? `${cleanedMarks} CGPA` : `${cleanedMarks}%`;
+};
 
 const cleanLinks = (links) => {
     if (!Array.isArray(links)) {
@@ -31,6 +61,101 @@ const cleanLinks = (links) => {
             url: cleanString(link.url)
         }))
         .filter((link) => link.label || link.url);
+};
+
+const cleanEducationDetails = (educationDetails) => {
+    if (!Array.isArray(educationDetails)) {
+        return [];
+    }
+
+    return educationDetails
+        .map((entry) => ({
+            institutionName: cleanString(entry.institutionName),
+            degreeName: cleanString(entry.degreeName),
+            year: cleanString(entry.year),
+            marks: cleanMarksValue(entry.marks),
+            marksType: normalizeMarksType(entry.marksType, entry.marks),
+            location: cleanString(entry.location)
+        }))
+        .filter((entry) =>
+            entry.institutionName ||
+            entry.degreeName ||
+            entry.year ||
+            entry.marks ||
+            entry.location
+        );
+};
+
+const cleanWorkExperienceDetails = (workExperienceDetails) => {
+    if (!Array.isArray(workExperienceDetails)) {
+        return [];
+    }
+
+    return workExperienceDetails
+        .map((entry) => ({
+            companyName: cleanString(entry.companyName),
+            designation: cleanString(entry.designation),
+            startDate: cleanString(entry.startDate),
+            endDate: cleanString(entry.endDate),
+            location: cleanString(entry.location),
+            isRemote: Boolean(entry.isRemote),
+            whatLearned: cleanString(entry.whatLearned)
+        }))
+        .filter((entry) =>
+            entry.companyName ||
+            entry.designation ||
+            entry.startDate ||
+            entry.endDate ||
+            entry.location ||
+            entry.isRemote ||
+            entry.whatLearned
+        );
+};
+
+const buildEducationSummary = (educationDetails, fallbackEducation) => {
+    const cleanedDetails = cleanEducationDetails(educationDetails);
+
+    if (!cleanedDetails.length) {
+        return cleanString(fallbackEducation);
+    }
+
+    return cleanedDetails
+        .map((entry) => {
+            const title = [entry.degreeName, entry.institutionName].filter(Boolean).join(" - ");
+            const meta = [
+                entry.year ? `Year: ${formatEducationYear(entry.year)}` : "",
+                entry.marks ? `Marks: ${formatMarks(entry.marks, entry.marksType)}` : "",
+                entry.location ? `Location: ${entry.location}` : ""
+            ].filter(Boolean);
+
+            return [title, meta.join(", ")].filter(Boolean).join("\n");
+        })
+        .join("\n\n");
+};
+
+const buildWorkExperienceSummary = (workExperienceDetails, fallbackWorkExperience) => {
+    const cleanedDetails = cleanWorkExperienceDetails(workExperienceDetails);
+
+    if (!cleanedDetails.length) {
+        return cleanString(fallbackWorkExperience);
+    }
+
+    return cleanedDetails
+        .map((entry) => {
+            const title = [entry.designation, entry.companyName].filter(Boolean).join(" - ");
+            const duration = [formatEducationYear(entry.startDate), formatEducationYear(entry.endDate) || (entry.startDate ? "Present" : "")]
+                .filter(Boolean)
+                .join(" to ");
+            const location = entry.isRemote ? "Remote" : entry.location;
+            const meta = [
+                duration ? `Duration: ${duration}` : "",
+                location ? `Location: ${location}` : ""
+            ].filter(Boolean);
+            const learned = entry.whatLearned ? `What learned: ${entry.whatLearned}` : "";
+
+            return [title, meta.join(", "), learned].filter(Boolean).join("\n");
+        })
+        .join("\n\n");
 };
 
 const getPortfolioDocument = async (userId) => {
@@ -111,12 +236,16 @@ export async function getMyPortfolio(req, res) {
 export async function saveMyPortfolio(req, res) {
     try {
         const userId = req.user._id;
-        const { bio, education, workExperience, links } = req.body;
+        const { bio, education, educationDetails, workExperience, workExperienceDetails, links } = req.body;
         const portfolio = await getPortfolioDocument(userId);
+        const cleanedEducationDetails = cleanEducationDetails(educationDetails);
+        const cleanedWorkExperienceDetails = cleanWorkExperienceDetails(workExperienceDetails);
 
         portfolio.bio = cleanString(bio);
-        portfolio.education = cleanString(education);
-        portfolio.workExperience = cleanString(workExperience);
+        portfolio.educationDetails = cleanedEducationDetails;
+        portfolio.education = buildEducationSummary(cleanedEducationDetails, education);
+        portfolio.workExperienceDetails = cleanedWorkExperienceDetails;
+        portfolio.workExperience = buildWorkExperienceSummary(cleanedWorkExperienceDetails, workExperience);
         portfolio.links = cleanLinks(links);
         portfolio.projects = await Project.find({ freelancer: userId }).distinct("_id");
 

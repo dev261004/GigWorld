@@ -17,6 +17,82 @@ const linkSchema = new Schema(
     {_id: false}
 );
 
+const educationDetailSchema = new Schema(
+    {
+        institutionName: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        degreeName: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        year: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        marks: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        marksType: {
+            type: String,
+            enum: ["percentage", "cgpa"],
+            default: "percentage"
+        },
+        location: {
+            type: String,
+            trim: true,
+            default: ""
+        }
+    },
+    {_id: false}
+);
+
+const workExperienceDetailSchema = new Schema(
+    {
+        companyName: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        designation: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        startDate: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        endDate: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        location: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        isRemote: {
+            type: Boolean,
+            default: false
+        },
+        whatLearned: {
+            type: String,
+            trim: true,
+            default: ""
+        }
+    },
+    {_id: false}
+);
+
 const resumeSchema = new Schema(
     {
         originalName: {
@@ -78,10 +154,18 @@ const PortfolioSchema = new Schema(
             trim: true,
             default: ""
         },
+        educationDetails: {
+            type: [educationDetailSchema],
+            default: []
+        },
         workExperience: {
             type: String,
             trim: true,
             default: ""
+        },
+        workExperienceDetails: {
+            type: [workExperienceDetailSchema],
+            default: []
         },
         links: {
             type: [linkSchema],

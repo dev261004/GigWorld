@@ -55,3 +55,64 @@
 .source-logo-slider:hover {
   animation-play-state: paused;
 }
+
+.gigworld-calendar {
+  width: 100%;
+  border: 0;
+  font-family: inherit;
+}
+
+.gigworld-calendar .react-calendar__navigation {
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.gigworld-calendar .react-calendar__navigation button {
+  min-width: 36px;
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.gigworld-calendar .react-calendar__navigation button:enabled:hover,
+.gigworld-calendar .react-calendar__navigation button:enabled:focus {
+  background: #dbeafe;
+}
+
+.gigworld-calendar .react-calendar__month-view__weekdays {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.gigworld-calendar .react-calendar__month-view__weekdays abbr {
+  text-decoration: none;
+}
+
+.gigworld-calendar .react-calendar__tile {
+  border-radius: 8px;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 6px;
+}
+
+.gigworld-calendar .react-calendar__tile:enabled:hover,
+.gigworld-calendar .react-calendar__tile:enabled:focus {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.gigworld-calendar .react-calendar__tile--now {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.gigworld-calendar .react-calendar__tile--active,
+.gigworld-calendar .react-calendar__tile--active:enabled:hover,
+.gigworld-calendar .react-calendar__tile--active:enabled:focus {
+  background: #1d4ed8;
+  color: #ffffff;
+}

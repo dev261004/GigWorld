@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import CalendarInput from "../../components/CalendarInput/CalendarInput";
 import Footer from "../../components/Footer/Footer";
 import Navbar from "../../components/Navbar/Navbar";
 
@@ -21,6 +22,30 @@ const emptyProjectForm = {
   projectLink: "",
 };
 
+const emptyEducationEntry = {
+  institutionName: "",
+  degreeName: "",
+  year: "",
+  marks: "",
+  marksType: "percentage",
+  location: "",
+};
+
+const emptyWorkExperienceEntry = {
+  companyName: "",
+  designation: "",
+  startDate: "",
+  endDate: "",
+  location: "",
+  isRemote: false,
+  whatLearned: "",
+};
+
+const marksTypeOptions = [
+  { value: "percentage", label: "Percentage", suffix: "%" },
+  { value: "cgpa", label: "CGPA", suffix: "CGPA" },
+];
+
 const getAuthHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("authToken")}`,
 });
@@ -33,6 +58,175 @@ const normalizeLinks = (links = []) => {
   const customLinks = links.filter((link) => !defaultLinks.some((defaultLink) => defaultLink.label === link.label));
   return [...mergedLinks, ...customLinks];
 };
+
+const hasEducationEntryValue = (entry = {}) =>
+  Boolean(entry.institutionName || entry.degreeName || entry.year || entry.marks || entry.location);
+
+const hasWorkExperienceEntryValue = (entry = {}) =>
+  Boolean(
+    entry.companyName ||
+      entry.designation ||
+      entry.startDate ||
+      entry.endDate ||
+      entry.location ||
+      entry.isRemote ||
+      entry.whatLearned,
+  );
+
+const cleanMarksValue = (value = "") => value.replace(/\s*(%|cgpa)$/i, "").trim();
+
+const normalizeMarksType = (value = "", marks = "") => {
+  if (value === "cgpa" || /cgpa/i.test(marks)) {
+    return "cgpa";
+  }
+
+  return "percentage";
+};
+
+const getMarksSuffix = (marksType = "percentage") =>
+  marksTypeOptions.find((option) => option.value === marksType)?.suffix || "%";
+
+const formatMarks = (marks = "", marksType = "percentage") => {
+  const cleanedMarks = cleanMarksValue(marks);
+
+  if (!cleanedMarks) {
+    return "";
+  }
+
+  return `${cleanedMarks}${marksType === "cgpa" ? " CGPA" : "%"}`;
+};
+
+const normalizeEducationDetails = (educationDetails = [], fallbackEducation = "") => {
+  if (Array.isArray(educationDetails) && educationDetails.length > 0) {
+    const normalizedEntries = educationDetails.map((entry) => ({
+      ...emptyEducationEntry,
+      ...entry,
+      marks: cleanMarksValue(entry.marks || ""),
+      marksType: normalizeMarksType(entry.marksType, entry.marks),
+    }));
+
+    return normalizedEntries.length ? normalizedEntries : [emptyEducationEntry];
+  }
+
+  if (fallbackEducation) {
+    return [{ ...emptyEducationEntry, degreeName: fallbackEducation }];
+  }
+
+  return [emptyEducationEntry];
+};
+
+const normalizeWorkExperienceDetails = (workExperienceDetails = [], fallbackWorkExperience = "") => {
+  if (Array.isArray(workExperienceDetails) && workExperienceDetails.length > 0) {
+    const normalizedEntries = workExperienceDetails.map((entry) => ({
+      ...emptyWorkExperienceEntry,
+      ...entry,
+      isRemote: Boolean(entry.isRemote),
+    }));
+
+    return normalizedEntries.length ? normalizedEntries : [emptyWorkExperienceEntry];
+  }
+
+  if (fallbackWorkExperience) {
+    return [{ ...emptyWorkExperienceEntry, whatLearned: fallbackWorkExperience }];
+  }
+
+  return [emptyWorkExperienceEntry];
+};
+
+const getFilledEducationDetails = (educationDetails = []) =>
+  educationDetails
+    .map((entry) => ({
+      institutionName: (entry.institutionName || "").trim(),
+      degreeName: (entry.degreeName || "").trim(),
+      year: (entry.year || "").trim(),
+      marks: cleanMarksValue(entry.marks || ""),
+      marksType: normalizeMarksType(entry.marksType, entry.marks),
+      location: (entry.location || "").trim(),
+    }))
+    .filter(hasEducationEntryValue);
+
+const getFilledWorkExperienceDetails = (workExperienceDetails = []) =>
+  workExperienceDetails
+    .map((entry) => ({
+      companyName: (entry.companyName || "").trim(),
+      designation: (entry.designation || "").trim(),
+      startDate: (entry.startDate || "").trim(),
+      endDate: (entry.endDate || "").trim(),
+      location: (entry.location || "").trim(),
+      isRemote: Boolean(entry.isRemote),
+      whatLearned: (entry.whatLearned || "").trim(),
+    }))
+    .filter(hasWorkExperienceEntryValue);
+
+const formatMonthYear = (value = "") => {
+  if (!value) {
+    return "";
+  }
+
+  if (/^\d{4}-\d{2}$/.test(value)) {
+    const [year, month] = value.split("-").map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString(undefined, {
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  return value;
+};
+
+const formatEducationEntry = (entry) => {
+  const title = [entry.degreeName, entry.institutionName].filter(Boolean).join(" - ");
+  const meta = [
+    entry.year ? `Year: ${formatMonthYear(entry.year)}` : "",
+    entry.marks ? `Marks: ${formatMarks(entry.marks, entry.marksType)}` : "",
+    entry.location ? `Location: ${entry.location}` : "",
+  ].filter(Boolean);
+
+  return [title, meta.join(", ")].filter(Boolean).join("\n");
+};
+
+const buildEducationText = (portfolio = {}) => {
+  const educationDetails = getFilledEducationDetails(portfolio.educationDetails || []);
+
+  if (educationDetails.length) {
+    return educationDetails.map(formatEducationEntry).join("\n\n");
+  }
+
+  return portfolio.education || "";
+};
+
+const formatWorkExperienceEntry = (entry) => {
+  const title = [entry.designation, entry.companyName].filter(Boolean).join(" - ");
+  const duration = [formatMonthYear(entry.startDate), formatMonthYear(entry.endDate) || (entry.startDate ? "Present" : "")]
+    .filter(Boolean)
+    .join(" to ");
+  const location = entry.isRemote ? "Remote" : entry.location;
+  const meta = [
+    duration ? `Duration: ${duration}` : "",
+    location ? `Location: ${location}` : "",
+  ].filter(Boolean);
+
+  return [title, meta.join(", "), entry.whatLearned ? `What learned: ${entry.whatLearned}` : ""]
+    .filter(Boolean)
+    .join("\n");
+};
+
+const buildWorkExperienceText = (portfolio = {}) => {
+  const workExperienceDetails = getFilledWorkExperienceDetails(portfolio.workExperienceDetails || []);
+
+  if (workExperienceDetails.length) {
+    return workExperienceDetails.map(formatWorkExperienceEntry).join("\n\n");
+  }
+
+  return portfolio.workExperience || "";
+};
+
+const normalizePortfolio = (portfolio = {}) => ({
+  ...portfolio,
+  links: normalizeLinks(portfolio.links || []),
+  educationDetails: normalizeEducationDetails(portfolio.educationDetails, portfolio.education),
+  workExperienceDetails: normalizeWorkExperienceDetails(portfolio.workExperienceDetails, portfolio.workExperience),
+});
 
 const getFileUrl = (resume) => (resume?.url ? `${API_BASE_URL}${resume.url}` : "");
 
@@ -54,6 +248,8 @@ const getInitial = (user) => {
 };
 
 const buildApplicationText = ({ user, portfolio, projects, skills }) => {
+  const educationText = buildEducationText(portfolio);
+  const workExperienceText = buildWorkExperienceText(portfolio);
   const links = (portfolio.links || [])
     .filter((link) => link.label || link.url)
     .map((link) => `${link.label}: ${link.url}`)
@@ -71,8 +267,8 @@ const buildApplicationText = ({ user, portfolio, projects, skills }) => {
     user?.email,
     portfolio.bio,
     skills.length ? `Skills: ${skills.join(", ")}` : "",
-    portfolio.education ? `Education: ${portfolio.education}` : "",
-    portfolio.workExperience ? `Work experience: ${portfolio.workExperience}` : "",
+    educationText ? `Education:\n${educationText}` : "",
+    workExperienceText ? `Work experience:\n${workExperienceText}` : "",
     links ? `Links:\n${links}` : "",
     projectText ? `Projects:\n${projectText}` : "",
   ]
@@ -223,7 +419,9 @@ const PortfolioPage = () => {
   const [portfolio, setPortfolio] = useState({
     bio: "",
     education: "",
+    educationDetails: [emptyEducationEntry],
     workExperience: "",
+    workExperienceDetails: [emptyWorkExperienceEntry],
     links: defaultLinks,
   });
   const [projects, setProjects] = useState([]);
@@ -245,6 +443,8 @@ const PortfolioPage = () => {
   );
   const uploadedResume = portfolio.uploadedResume;
   const generatedResume = portfolio.generatedResume;
+  const educationText = useMemo(() => buildEducationText(portfolio), [portfolio]);
+  const workExperienceText = useMemo(() => buildWorkExperienceText(portfolio), [portfolio]);
 
   const showToast = (message) => {
     setToast(message);
@@ -264,10 +464,7 @@ const PortfolioPage = () => {
       const nextPortfolio = response.data?.portfolio || {};
 
       setUser(response.data?.user || null);
-      setPortfolio({
-        ...nextPortfolio,
-        links: normalizeLinks(nextPortfolio.links || []),
-      });
+      setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
     } catch (requestError) {
       console.error("Error fetching portfolio:", requestError);
@@ -290,6 +487,60 @@ const PortfolioPage = () => {
     }));
   };
 
+  const handleEducationChange = (index, field, value) => {
+    setPortfolio((current) => ({
+      ...current,
+      educationDetails: (current.educationDetails || [emptyEducationEntry]).map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
+    }));
+  };
+
+  const addEducationEntry = () => {
+    setPortfolio((current) => ({
+      ...current,
+      educationDetails: [...(current.educationDetails || []), emptyEducationEntry],
+    }));
+  };
+
+  const removeEducationEntry = (index) => {
+    setPortfolio((current) => {
+      const nextEntries = (current.educationDetails || []).filter((_, entryIndex) => entryIndex !== index);
+
+      return {
+        ...current,
+        educationDetails: nextEntries.length ? nextEntries : [emptyEducationEntry],
+      };
+    });
+  };
+
+  const handleWorkExperienceChange = (index, field, value) => {
+    setPortfolio((current) => ({
+      ...current,
+      workExperienceDetails: (current.workExperienceDetails || [emptyWorkExperienceEntry]).map((entry, entryIndex) =>
+        entryIndex === index ? { ...entry, [field]: value } : entry,
+      ),
+    }));
+  };
+
+  const addWorkExperienceEntry = () => {
+    setPortfolio((current) => ({
+      ...current,
+      workExperienceDetails: [...(current.workExperienceDetails || []), emptyWorkExperienceEntry],
+    }));
+  };
+
+  const removeWorkExperienceEntry = (index) => {
+    setPortfolio((current) => {
+      const nextEntries = (current.workExperienceDetails || []).filter((_, entryIndex) => entryIndex !== index);
+
+      return {
+        ...current,
+        workExperienceDetails: nextEntries.length ? nextEntries : [emptyWorkExperienceEntry],
+      };
+    });
+  };
+
   const handleLinkChange = (index, field, value) => {
     setPortfolio((current) => ({
       ...current,
@@ -309,18 +560,17 @@ const PortfolioPage = () => {
         `${API_BASE_URL}/api/v1/portfolio/me`,
         {
           bio: portfolio.bio,
-          education: portfolio.education,
-          workExperience: portfolio.workExperience,
+          education: educationText,
+          educationDetails: getFilledEducationDetails(portfolio.educationDetails),
+          workExperience: workExperienceText,
+          workExperienceDetails: getFilledWorkExperienceDetails(portfolio.workExperienceDetails),
           links: portfolio.links,
         },
         { headers: getAuthHeaders() },
       );
       const nextPortfolio = response.data?.portfolio || {};
 
-      setPortfolio({
-        ...nextPortfolio,
-        links: normalizeLinks(nextPortfolio.links || []),
-      });
+      setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
       showToast("Portfolio details saved.");
     } catch (requestError) {
@@ -416,10 +666,7 @@ const PortfolioPage = () => {
       });
       const nextPortfolio = response.data?.portfolio || {};
 
-      setPortfolio({
-        ...nextPortfolio,
-        links: normalizeLinks(nextPortfolio.links || []),
-      });
+      setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
       setResumeFile(null);
       showToast("Resume uploaded.");
@@ -441,10 +688,7 @@ const PortfolioPage = () => {
       });
       const nextPortfolio = response.data?.portfolio || {};
 
-      setPortfolio({
-        ...nextPortfolio,
-        links: normalizeLinks(nextPortfolio.links || []),
-      });
+      setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
       showToast("Resume generated.");
     } catch (requestError) {
@@ -562,35 +806,185 @@ const PortfolioPage = () => {
                     />
                   </div>
 
-                  <div className="grid gap-5 lg:grid-cols-2">
-                    <div>
+                  <div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
-                        <label htmlFor="portfolio-education" className="text-sm font-black uppercase text-slate-700">Education / qualification</label>
-                        <CopyIconButton label="Copy education" onClick={() => copyToClipboard("Education", portfolio.education)} />
+                        <p className="text-sm font-black uppercase text-slate-700">Education / qualification</p>
+                        <CopyIconButton label="Copy education" onClick={() => copyToClipboard("Education", educationText)} />
                       </div>
-                      <textarea
-                        id="portfolio-education"
-                        value={portfolio.education || ""}
-                        onChange={(event) => handlePortfolioChange("education", event.target.value)}
-                        className="mt-2 min-h-28 w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-                        placeholder="Degree, certification, bootcamp, or relevant learning."
-                      />
+                      <button
+                        type="button"
+                        onClick={addEducationEntry}
+                        className="self-start text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8 sm:self-auto"
+                      >
+                        Add education -&gt;
+                      </button>
                     </div>
-                    <div>
+
+                    <div className="mt-3 grid gap-4">
+                      {(portfolio.educationDetails || [emptyEducationEntry]).map((entry, index) => (
+                        <div key={`education-${index}`} className="rounded-lg border border-blue-200 bg-blue-50/40 p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-xs font-black uppercase text-blue-700">Education {index + 1}</p>
+                            {(portfolio.educationDetails || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeEducationEntry(index)}
+                                className="text-xs font-black text-red-600"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid gap-3 lg:grid-cols-2">
+                            <input
+                              type="text"
+                              value={entry.institutionName || ""}
+                              onChange={(event) => handleEducationChange(index, "institutionName", event.target.value)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                              placeholder="School / college name"
+                            />
+                            <input
+                              type="text"
+                              value={entry.degreeName || ""}
+                              onChange={(event) => handleEducationChange(index, "degreeName", event.target.value)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                              placeholder="Degree / 10th / 12th"
+                            />
+                            <CalendarInput
+                              value={entry.year || ""}
+                              onChange={(value) => handleEducationChange(index, "year", value)}
+                              mode="month"
+                              placeholder="Completion month"
+                              ariaLabel="Select completion month"
+                            />
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              <select
+                                value={entry.marksType || "percentage"}
+                                onChange={(event) => handleEducationChange(index, "marksType", event.target.value)}
+                                className="h-11 w-full rounded-lg border-blue-200 bg-white text-sm font-bold text-slate-900 shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                                aria-label="Marks type"
+                              >
+                                {marksTypeOptions.map((option) => (
+                                  <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                              </select>
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={entry.marks || ""}
+                                  onChange={(event) =>
+                                    handleEducationChange(index, "marks", cleanMarksValue(event.target.value))
+                                  }
+                                  className="h-11 w-full rounded-lg border-blue-200 pr-16 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                                  placeholder={entry.marksType === "cgpa" ? "Enter CGPA" : "Enter percentage"}
+                                />
+                                <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-black uppercase text-blue-700">
+                                  {getMarksSuffix(entry.marksType)}
+                                </span>
+                              </div>
+                            </div>
+                            <input
+                              type="text"
+                              value={entry.location || ""}
+                              onChange={(event) => handleEducationChange(index, "location", event.target.value)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20 lg:col-span-2"
+                              placeholder="Location"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex items-center gap-2">
-                        <label htmlFor="portfolio-work-experience" className="text-sm font-black uppercase text-slate-700">Work experience</label>
+                        <p className="text-sm font-black uppercase text-slate-700">Work experience</p>
                         <CopyIconButton
                           label="Copy work experience"
-                          onClick={() => copyToClipboard("Work experience", portfolio.workExperience)}
+                          onClick={() => copyToClipboard("Work experience", workExperienceText)}
                         />
                       </div>
-                      <textarea
-                        id="portfolio-work-experience"
-                        value={portfolio.workExperience || ""}
-                        onChange={(event) => handlePortfolioChange("workExperience", event.target.value)}
-                        className="mt-2 min-h-28 w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-                        placeholder="Past roles, freelance work, outcomes, or relevant experience."
-                      />
+                      <button
+                        type="button"
+                        onClick={addWorkExperienceEntry}
+                        className="self-start text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8 sm:self-auto"
+                      >
+                        Add experience -&gt;
+                      </button>
+                    </div>
+
+                    <div className="mt-3 grid gap-4">
+                      {(portfolio.workExperienceDetails || [emptyWorkExperienceEntry]).map((entry, index) => (
+                        <div key={`work-experience-${index}`} className="rounded-lg border border-blue-200 bg-white p-4">
+                          <div className="mb-3 flex items-center justify-between gap-3">
+                            <p className="text-xs font-black uppercase text-blue-700">Experience {index + 1}</p>
+                            {(portfolio.workExperienceDetails || []).length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeWorkExperienceEntry(index)}
+                                className="text-xs font-black text-red-600"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                          <div className="grid gap-3 lg:grid-cols-2">
+                            <input
+                              type="text"
+                              value={entry.companyName || ""}
+                              onChange={(event) => handleWorkExperienceChange(index, "companyName", event.target.value)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                              placeholder="Company name"
+                            />
+                            <input
+                              type="text"
+                              value={entry.designation || ""}
+                              onChange={(event) => handleWorkExperienceChange(index, "designation", event.target.value)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                              placeholder="Role / designation"
+                            />
+                            <CalendarInput
+                              value={entry.startDate || ""}
+                              onChange={(value) => handleWorkExperienceChange(index, "startDate", value)}
+                              mode="month"
+                              placeholder="Start month"
+                              ariaLabel="Select start month"
+                            />
+                            <CalendarInput
+                              value={entry.endDate || ""}
+                              onChange={(value) => handleWorkExperienceChange(index, "endDate", value)}
+                              mode="month"
+                              placeholder="End month"
+                              ariaLabel="Select end month"
+                            />
+                            <label className="flex h-11 items-center gap-3 rounded-lg border border-blue-200 bg-blue-50/40 px-4 text-sm font-bold text-slate-800">
+                              <input
+                                type="checkbox"
+                                checked={Boolean(entry.isRemote)}
+                                onChange={(event) => handleWorkExperienceChange(index, "isRemote", event.target.checked)}
+                                className="rounded border-blue-300 text-blue-700 focus:ring-blue-600/20"
+                              />
+                              Remote
+                            </label>
+                            <input
+                              type="text"
+                              value={entry.isRemote ? "Remote" : entry.location || ""}
+                              onChange={(event) => handleWorkExperienceChange(index, "location", event.target.value)}
+                              disabled={Boolean(entry.isRemote)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20 disabled:bg-slate-100 disabled:text-slate-500"
+                              placeholder="Location"
+                            />
+                            <textarea
+                              value={entry.whatLearned || ""}
+                              onChange={(event) => handleWorkExperienceChange(index, "whatLearned", event.target.value)}
+                              className="min-h-24 rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20 lg:col-span-2"
+                              placeholder="What did you learn, build, or improve in this role?"
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 

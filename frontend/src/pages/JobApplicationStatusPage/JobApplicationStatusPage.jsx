@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
+import CalendarInput from "../../components/CalendarInput/CalendarInput";
 
 const fallbackStatuses = [
   "Viewed source",
@@ -547,12 +548,14 @@ const JobApplicationStatusPage = () => {
 
                     <label className="block">
                       <span className="text-xs font-bold uppercase text-slate-500">Reminder</span>
-                      <input
-                        type="date"
-                        value={draft.reminderAt}
-                        onChange={(event) => updateDraft(tracker._id, "reminderAt", event.target.value)}
-                        className="mt-2 block w-full rounded-lg border-blue-200 bg-blue-50/40 px-4 py-3 text-sm font-bold text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
-                      />
+                      <div className="mt-2">
+                        <CalendarInput
+                          value={draft.reminderAt}
+                          onChange={(value) => updateDraft(tracker._id, "reminderAt", value)}
+                          placeholder="Select reminder date"
+                          ariaLabel="Select reminder date"
+                        />
+                      </div>
                     </label>
 
                     <div>
