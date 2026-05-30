@@ -43,6 +43,248 @@ const renderParagraphs = (value = "Not listed") => {
     return paragraphs.map((item) => `<p>${escapeHtml(item)}</p>`).join("");
 };
 
+const formatMonthYear = (value = "") => {
+    const cleanedValue = String(value || "").trim();
+
+    if (!cleanedValue) {
+        return "";
+    }
+
+    if (/^\d{4}-\d{2}$/.test(cleanedValue)) {
+        const [year, month] = cleanedValue.split("-").map(Number);
+        return new Date(year, month - 1, 1).toLocaleDateString("en-US", {
+            month: "short",
+            year: "numeric",
+        });
+    }
+
+    return cleanedValue;
+};
+
+const cleanMarksValue = (value = "") => String(value || "").replace(/\s*(%|cgpa)$/i, "").trim();
+
+const formatMarks = (marks = "", marksType = "percentage") => {
+    const cleanedMarks = cleanMarksValue(marks);
+
+    if (!cleanedMarks) {
+        return "";
+    }
+
+    if (marksType === "cgpa") {
+        return cleanedMarks.includes("/") ? `CGPA: ${cleanedMarks}` : `CGPA: ${cleanedMarks}/10`;
+    }
+
+    return `Percentage: ${cleanedMarks}%`;
+};
+
+const cleanBulletText = (value = "") =>
+    String(value || "")
+        .replace(/^\s*[•*-]\s*/, "")
+        .trim();
+
+const splitHighlights = (value = "") =>
+    String(value || "")
+        .split(/\n+/)
+        .map(cleanBulletText)
+        .filter(Boolean);
+
+const splitTitleLine = (value = "") => {
+    const parts = String(value || "").split(/\s+-\s+/);
+    return {
+        primary: String(parts.shift() || "").trim(),
+        secondary: parts.join(" - ").trim(),
+    };
+};
+
+const extractMetaValue = (value = "", label = "") => {
+    const match = String(value || "").match(new RegExp(`${label}:\\s*([^,]+)`, "i"));
+    return match ? match[1].trim() : "";
+};
+
+const formatLegacyMarks = (value = "") => {
+    const cleanedValue = String(value || "").trim();
+
+    if (!cleanedValue) {
+        return "";
+    }
+
+    if (/cgpa/i.test(cleanedValue)) {
+        const cgpa = cleanedValue.replace(/cgpa/i, "").trim();
+        return cgpa.includes("/") ? `CGPA: ${cgpa}` : `CGPA: ${cgpa}/10`;
+    }
+
+    if (/%/.test(cleanedValue)) {
+        return `Percentage: ${cleanedValue}`;
+    }
+
+    return `Marks: ${cleanedValue}`;
+};
+
+const renderLegacyEducation = (value = "") => {
+    const lines = String(value || "")
+        .split(/\n+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    if (!lines.length || lines[0].toLowerCase() === "not listed") {
+        return "";
+    }
+
+    const entries = [];
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const titleLine = lines[index];
+        const metaLine = /^year:/i.test(lines[index + 1] || "") ? lines[index + 1] : "";
+
+        if (metaLine) {
+            index += 1;
+        }
+
+        const { primary, secondary } = splitTitleLine(titleLine);
+        const date = extractMetaValue(metaLine, "Year");
+        const marks = formatLegacyMarks(extractMetaValue(metaLine, "Marks"));
+        const location = extractMetaValue(metaLine, "Location");
+        const secondaryLine = [
+            secondary ? ` at ${secondary}` : "",
+            location ? ` — ${location}` : "",
+        ].join("");
+
+        entries.push(`
+            <div class="two-column-entry education-entry">
+                <div>
+                    <p><strong>${escapeHtml(primary || titleLine)}</strong>${escapeHtml(secondaryLine)}</p>
+                    ${marks ? `<p><em>${escapeHtml(marks)}</em></p>` : ""}
+                </div>
+                <div class="entry-meta">${escapeHtml(date)}</div>
+            </div>
+        `);
+    }
+
+    return entries.join("");
+};
+
+const renderLegacyExperience = (value = "") => {
+    const groups = String(value || "")
+        .split(/\n{2,}/)
+        .map((group) => group.trim())
+        .filter(Boolean);
+
+    if (!groups.length || groups[0].toLowerCase() === "not listed") {
+        return "";
+    }
+
+    return groups
+        .map((group) => {
+            const lines = group.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+            const titleLine = lines.shift() || "";
+            const metaLineIndex = lines.findIndex((line) => /^duration:/i.test(line));
+            const metaLine = metaLineIndex >= 0 ? lines.splice(metaLineIndex, 1)[0] : "";
+            const learnedLineIndex = lines.findIndex((line) => /^what learned:/i.test(line));
+            const learnedLine = learnedLineIndex >= 0 ? lines.splice(learnedLineIndex, 1)[0] : "";
+            const { primary, secondary } = splitTitleLine(titleLine);
+            const duration = extractMetaValue(metaLine, "Duration").replace(/\s+to\s+/i, " – ");
+            const location = extractMetaValue(metaLine, "Location");
+            const secondaryLine = [
+                secondary ? `, ${secondary}` : "",
+                location ? ` — ${location}` : "",
+            ].join("");
+            const highlights = [
+                cleanBulletText(learnedLine.replace(/^what learned:\s*/i, "")),
+                ...lines.map(cleanBulletText),
+            ].filter(Boolean);
+
+            return `
+                <div class="two-column-entry experience-entry">
+                    <div>
+                        <p><strong>${escapeHtml(primary || titleLine)}</strong>${escapeHtml(secondaryLine)}</p>
+                    </div>
+                    <div class="entry-meta">${escapeHtml(duration)}</div>
+                </div>
+                ${highlights.length ? `
+                    <ul class="highlights">
+                        ${highlights.map((highlight) => `<li>${escapeHtml(highlight)}</li>`).join("")}
+                    </ul>
+                ` : ""}
+            `;
+        })
+        .join("");
+};
+
+const renderEducation = (portfolio) => {
+    const educationDetails = Array.isArray(portfolio.educationDetails) ? portfolio.educationDetails : [];
+    const filledEducation = educationDetails.filter((entry) =>
+        entry?.institutionName || entry?.degreeName || entry?.year || entry?.marks || entry?.location
+    );
+
+    if (!filledEducation.length) {
+        const legacyEducation = renderLegacyEducation(portfolio.education);
+        return legacyEducation || `<div class="one-column-entry">${renderParagraphs(portfolio.education || "Not listed")}</div>`;
+    }
+
+    return filledEducation
+        .map((entry) => {
+            const degree = entry.degreeName || "Education";
+            const institutionLine = [
+                entry.institutionName ? ` at ${entry.institutionName}` : "",
+                entry.location ? ` — ${entry.location}` : "",
+            ].join("");
+            const marksLine = formatMarks(entry.marks, entry.marksType);
+
+            return `
+                <div class="two-column-entry education-entry">
+                    <div>
+                        <p><strong>${escapeHtml(degree)}</strong>${escapeHtml(institutionLine)}</p>
+                        ${marksLine ? `<p><em>${escapeHtml(marksLine)}</em></p>` : ""}
+                    </div>
+                    <div class="entry-meta">${escapeHtml(formatMonthYear(entry.year))}</div>
+                </div>
+            `;
+        })
+        .join("");
+};
+
+const renderExperience = (portfolio) => {
+    const experienceDetails = Array.isArray(portfolio.workExperienceDetails) ? portfolio.workExperienceDetails : [];
+    const filledExperience = experienceDetails.filter((entry) =>
+        entry?.companyName || entry?.designation || entry?.startDate || entry?.endDate || entry?.location || entry?.isRemote || entry?.whatLearned
+    );
+
+    if (!filledExperience.length) {
+        const legacyExperience = renderLegacyExperience(portfolio.workExperience);
+        return legacyExperience || `<div class="one-column-entry">${renderParagraphs(portfolio.workExperience || "Not listed")}</div>`;
+    }
+
+    return filledExperience
+        .map((entry) => {
+            const title = entry.designation || "Role";
+            const location = entry.isRemote ? "Remote" : entry.location;
+            const companyLine = [
+                entry.companyName ? `, ${entry.companyName}` : "",
+                location ? ` — ${location}` : "",
+            ].join("");
+            const duration = [
+                formatMonthYear(entry.startDate),
+                formatMonthYear(entry.endDate) || (entry.startDate ? "Present" : ""),
+            ].filter(Boolean).join(" – ");
+            const highlights = splitHighlights(entry.whatLearned);
+
+            return `
+                <div class="two-column-entry experience-entry">
+                    <div>
+                        <p><strong>${escapeHtml(title)}</strong>${escapeHtml(companyLine)}</p>
+                    </div>
+                    <div class="entry-meta">${escapeHtml(duration)}</div>
+                </div>
+                ${highlights.length ? `
+                    <ul class="highlights">
+                        ${highlights.map((highlight) => `<li>${escapeHtml(highlight)}</li>`).join("")}
+                    </ul>
+                ` : ""}
+            `;
+        })
+        .join("");
+};
+
 const renderLinks = (links = []) => {
     const cleanLinks = links
         .map((link) => ({
@@ -106,8 +348,11 @@ const renderProjects = (projects = []) => {
 export const buildResumeHtml = ({ user, portfolio, projects }) => {
     const fullName = user?.fullName || user?.username || "GigWorld Freelancer";
     const skills = user?.gigPreferences?.skills || [];
-    const education = portfolio.education || user?.gigPreferences?.education || "Not listed";
-    const workExperience = portfolio.workExperience || user?.gigPreferences?.workExperience || "Not listed";
+    const portfolioForResume = {
+        ...portfolio,
+        education: portfolio.education || user?.gigPreferences?.education || "Not listed",
+        workExperience: portfolio.workExperience || user?.gigPreferences?.workExperience || "Not listed",
+    };
     const contactLine = renderContactLine({ user, portfolio });
 
     return `<!doctype html>
@@ -203,6 +448,10 @@ export const buildResumeHtml = ({ user, portfolio, projects }) => {
       break-inside: avoid;
     }
 
+    .two-column-entry p {
+      margin: 0 0 0.05cm;
+    }
+
     .two-column-entry h3 {
       margin: 0;
       font-size: 10pt;
@@ -228,6 +477,14 @@ export const buildResumeHtml = ({ user, portfolio, projects }) => {
     .compact-line {
       margin-bottom: 0.1cm;
     }
+
+    .education-entry {
+      margin-bottom: 0.12cm;
+    }
+
+    .experience-entry {
+      margin-bottom: 0.04cm;
+    }
   </style>
 </head>
 <body>
@@ -246,12 +503,12 @@ export const buildResumeHtml = ({ user, portfolio, projects }) => {
 
     <section class="section">
       <h2 class="section-title">Education</h2>
-      <div class="one-column-entry">${renderParagraphs(education)}</div>
+      ${renderEducation(portfolioForResume)}
     </section>
 
     <section class="section">
       <h2 class="section-title">Experience</h2>
-      <div class="one-column-entry">${renderParagraphs(workExperience)}</div>
+      ${renderExperience(portfolioForResume)}
     </section>
 
     <section class="section">
