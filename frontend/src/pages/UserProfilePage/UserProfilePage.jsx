@@ -42,10 +42,17 @@ const profileActions = [
   },
   {
     title: "Update account details",
-    description: "Edit your name, email, and core account information whenever it changes.",
+    description: "Edit your name, phone, location, and Google-created username.",
     to: "/update-account",
     icon: "bx-user-pin",
     accent: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  {
+    title: "Settings",
+    description: "Manage password access, sign-in method, and your current session.",
+    to: "/settings",
+    icon: "bx-cog",
+    accent: "bg-indigo-50 text-indigo-700 border-indigo-200",
   },
   {
     title: "Portfolio",
@@ -286,7 +293,7 @@ const UserProfilePage = () => {
         </section>
 
         <section className="py-10">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {profileActions.map((action) => (
               <Link
                 key={action.to}

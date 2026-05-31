@@ -25,6 +25,32 @@ const userSchema = new Schema(
             trim: true, 
             index: true
         },
+        phone: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        city: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        country: {
+            type: String,
+            trim: true,
+            default: ""
+        },
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true,
+            index: true
+        },
+        authProvider: {
+            type: String,
+            enum: ["password", "google", "password_google"],
+            default: "password"
+        },
 
         password: {
             type: String,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
+import GoogleAuthButton from "../../components/Auth/GoogleAuthButton";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
 
 const inputClass =
@@ -213,7 +214,17 @@ const SignupPage = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+            <div className="mt-6">
+              <GoogleAuthButton />
+            </div>
+
+            <div className="my-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-bold uppercase text-slate-400">or use email</span>
+              <span className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div role="alert" className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
                   {error}

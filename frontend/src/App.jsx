@@ -9,10 +9,12 @@ import WorkSearchPage from "./pages/WorkSearchPage/WorkSearchPage"
 import SignupPage from "./pages/SignupPage/SignupPage"
 import ForgotPasswordPage from './pages/ForgotPasswordPage/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage/ResetPasswordPage';
+import GoogleAuthCallbackPage from "./pages/GoogleAuthCallbackPage/GoogleAuthCallbackPage"
 import GigDetailsPage from "./pages/GigDetailsPage/GigDetailsPage"
 import GigPreferencesPage from "./pages/GigPreferencesPage/GigPreferencesPage"
 import UserProfilePage from "./pages/UserProfilePage/UserProfilePage"
 import UpdateAccountDetailsPage from "./pages/UpdateAccountDetailPage/UpdateAccountDetailPage"
+import SettingsPage from "./pages/SettingsPage/SettingsPage"
 import JobApplicationStatusPage from "./pages/JobApplicationStatusPage/JobApplicationStatusPage"
 import ProjectPage from "./pages/ProjectPage/ProjectPage"
 import PortfolioPage from "./pages/PortfolioPage/PortfolioPage"
@@ -28,6 +30,7 @@ function App() {
     <Route path="/" element={<Homepage />} />
     <Route path="/signin" element={<SigninPage />} />
     <Route path="/signup" element={<SignupPage />} />
+    <Route path="/auth/google/callback" element={<GoogleAuthCallbackPage />} />
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/contact" element={<ContactPage />} />
@@ -39,6 +42,7 @@ function App() {
     <Route path="/projects" element={<ProjectPage/>} />
     <Route path="/portfolio" element={<PortfolioPage/>} />
     <Route path="/update-account" element={<UpdateAccountDetailsPage/>} />
+    <Route path="/settings" element={<SettingsPage/>} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
     <Route path="/companies" element={<CompanyList />} />

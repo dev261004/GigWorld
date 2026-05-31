@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
+import GoogleAuthButton from "../../components/Auth/GoogleAuthButton";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
 
 const inputClass =
@@ -268,6 +269,14 @@ const SigninPage = () => {
                 {isSubmitting ? "Signing in..." : "Sign in"}
               </button>
             </form>
+
+            <div className="my-6 flex items-center gap-3">
+              <span className="h-px flex-1 bg-slate-200" />
+              <span className="text-xs font-bold uppercase text-slate-400">or</span>
+              <span className="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <GoogleAuthButton />
 
             <p className="mt-6 text-center text-sm text-slate-500">
               New to GigWorld?{" "}
