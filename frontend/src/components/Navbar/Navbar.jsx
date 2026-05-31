@@ -23,25 +23,57 @@ const getProfileInitial = (token) => {
   }
 };
 
+const getProfileName = (token) => {
+  try {
+    const savedUser = JSON.parse(localStorage.getItem("user") || "null");
+    const decodedUser = token ? jwtDecode(token) : {};
+    return (
+      savedUser?.name ||
+      savedUser?.fullName ||
+      savedUser?.username ||
+      decodedUser?.name ||
+      decodedUser?.fullName ||
+      decodedUser?.username ||
+      "GigWorld member"
+    );
+  } catch {
+    return "GigWorld member";
+  }
+};
+
+const profileMenuItems = [
+  { label: "Profile", to: "/profile", icon: "bx-user" },
+  { label: "Portfolio", to: "/portfolio", icon: "bx-briefcase-alt-2" },
+  { label: "Account details", to: "/update-account", icon: "bx-user-pin" },
+  { label: "Settings", to: "/settings", icon: "bx-cog" },
+  { label: "Application tracker", to: "/job-application-status", icon: "bx-list-check" },
+];
+
 const Navbar = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isGigsMenuOpen, setIsGigsMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("U");
+  const [profileName, setProfileName] = useState("GigWorld member");
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (token) {
       setIsAuthenticated(true);
       setProfileInitial(getProfileInitial(token));
+      setProfileName(getProfileName(token));
     }
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
+    localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     setIsAuthenticated(false);
     setProfileInitial("U");
+    setProfileName("GigWorld member");
+    setIsProfileMenuOpen(false);
     navigate("/");
   };
 
@@ -57,7 +89,7 @@ const Navbar = () => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </label>
-        <nav aria-label="Header Navigation" className="peer-checked:max-h-96 peer-checked:pt-6 flex max-h-0 w-full flex-col items-center overflow-hidden transition-all duration-300 lg:ml-16 lg:max-h-full lg:flex-row lg:overflow-visible lg:pt-0">
+        <nav aria-label="Header Navigation" className="peer-checked:max-h-[38rem] peer-checked:pt-6 flex max-h-0 w-full flex-col items-center overflow-hidden transition-all duration-300 lg:ml-16 lg:max-h-full lg:flex-row lg:overflow-visible lg:pt-0">
           <ul className="flex w-full flex-col items-center gap-2 text-sm font-semibold lg:flex-row lg:justify-center lg:gap-8">
             <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/">Home</Link></li>
             <li
@@ -99,21 +131,51 @@ const Navbar = () => {
           </ul>
           <div className="my-4 flex items-center gap-4 lg:my-0 lg:ml-auto">
             {isAuthenticated ? (
-              <div className="flex items-center justify-center gap-4">
-                <Link
-                  to="/profile"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-emerald-600 text-sm font-black uppercase text-white shadow-lg shadow-blue-700/20 transition-all duration-300 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  aria-label="User profile"
+              <div
+                className="relative w-full text-center lg:w-auto"
+                onMouseEnter={() => setIsProfileMenuOpen(true)}
+                onMouseLeave={() => setIsProfileMenuOpen(false)}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsProfileMenuOpen((current) => !current)}
+                  className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-blue-700 to-emerald-600 text-sm font-black uppercase text-white shadow-lg shadow-blue-700/20 transition-all duration-300 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 lg:mx-0"
+                  aria-label="Open profile menu"
+                  aria-expanded={isProfileMenuOpen}
+                  aria-haspopup="true"
                 >
                   {profileInitial}
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-red-300 bg-red-100 px-3 py-2 text-xs font-black text-red-800 transition hover:border-red-400 hover:bg-red-200"
-                >
-                  <i className="bx bx-log-out text-base" aria-hidden="true" />
-                  Logout
                 </button>
+
+                {isProfileMenuOpen && (
+                  <div className="mt-3 grid w-64 gap-1 rounded-lg border border-blue-100 bg-white p-2 text-left shadow-xl shadow-blue-950/10 lg:absolute lg:right-0 lg:top-full">
+                    <div className="border-b border-blue-100 px-3 py-3">
+                      <p className="text-xs font-black uppercase text-blue-700">Account menu</p>
+                      <p className="mt-1 break-words text-sm font-black text-slate-950">{profileName}</p>
+                    </div>
+
+                    {profileMenuItems.map((item) => (
+                      <Link
+                        key={item.to}
+                        to={item.to}
+                        onClick={() => setIsProfileMenuOpen(false)}
+                        className="inline-flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      >
+                        <i className={`bx ${item.icon} text-base`} aria-hidden="true" />
+                        {item.label}
+                      </Link>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="mt-1 inline-flex items-center gap-3 rounded-md border-t border-red-100 px-3 py-2.5 text-left text-sm font-black text-red-700 transition hover:bg-red-50"
+                    >
+                      <i className="bx bx-log-out text-base" aria-hidden="true" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <>

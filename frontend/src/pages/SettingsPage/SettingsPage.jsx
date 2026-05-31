@@ -187,26 +187,17 @@ const SettingsPage = () => {
               </div>
             </div>
           ) : (
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
-              <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
-                <div className="border-b border-blue-200 pb-6">
-                  <p className="text-sm font-black uppercase text-blue-700">Login & security</p>
-                  <h2 className="mt-2 text-2xl font-black text-slate-950">Password access</h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                    {isGoogleOnly
-                      ? "This account was created with Google, so it does not use a GigWorld password."
-                      : "Change your password using the same security rules as account signup."}
-                  </p>
-                </div>
-
-                {isGoogleOnly ? (
-                  <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-5">
-                    <p className="text-sm font-black uppercase text-emerald-700">Google enabled</p>
-                    <p className="mt-2 text-sm leading-6 text-emerald-800">
-                      Continue using Google to sign in. Password controls are hidden because this account has no local password.
+            <div className={`grid gap-6 ${isGoogleOnly ? "" : "lg:grid-cols-[minmax(0,1fr)_360px]"}`}>
+              {!isGoogleOnly && (
+                <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
+                  <div className="border-b border-blue-200 pb-6">
+                    <p className="text-sm font-black uppercase text-blue-700">Login & security</p>
+                    <h2 className="mt-2 text-2xl font-black text-slate-950">Change password</h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                      Change your password using the same security rules as account signup.
                     </p>
                   </div>
-                ) : (
+
                   <form onSubmit={handlePasswordSubmit} className="mt-6 grid gap-5">
                     <div>
                       <label htmlFor="oldPassword" className="text-sm font-black uppercase text-slate-700">Current password</label>
@@ -281,10 +272,10 @@ const SettingsPage = () => {
                       </button>
                     </div>
                   </form>
-                )}
-              </section>
+                </section>
+              )}
 
-              <aside className="grid gap-6">
+              <aside className={`grid gap-6 ${isGoogleOnly ? "lg:grid-cols-2" : ""}`}>
                 <section className="rounded-lg border border-blue-300 bg-white p-6 shadow-sm shadow-blue-950/5">
                   <p className="text-sm font-black uppercase text-blue-700">Account summary</p>
                   <div className="mt-5 grid gap-4 text-sm">

@@ -228,7 +228,7 @@ const UpdateAccountDetailsPage = () => {
 
               <div className="mt-6 grid gap-5 md:grid-cols-2">
                 <div>
-                  <label htmlFor="fullName" className="text-sm font-black uppercase text-slate-700">Full name</label>
+                  <label htmlFor="fullName" className="text-sm font-black uppercase text-slate-700">Name</label>
                   <input
                     id="fullName"
                     value={formData.fullName}
@@ -324,8 +324,9 @@ const UpdateAccountDetailsPage = () => {
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <Link
                     to="/settings"
-                    className="inline-flex h-11 items-center justify-center rounded-full border border-blue-300 bg-blue-50 px-5 text-sm font-black text-blue-700 transition hover:border-blue-500 hover:bg-blue-100"
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-blue-300 bg-blue-50 px-5 text-sm font-black text-blue-700 transition hover:border-blue-500 hover:bg-blue-100"
                   >
+                    <i className="bx bx-cog text-base" aria-hidden="true" />
                     Open settings
                   </Link>
                   <button
@@ -343,7 +344,7 @@ const UpdateAccountDetailsPage = () => {
 
               <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {[
-                  { label: "Full name", value: getDisplayValue(savedAccount.fullName) },
+                  { label: "Name", value: getDisplayValue(savedAccount.fullName) },
                   { label: "Username", value: getDisplayValue(savedAccount.username) },
                   { label: "Email", value: getDisplayValue(savedAccount.email) },
                   { label: "Phone", value: getDisplayValue(savedAccount.phone) },
