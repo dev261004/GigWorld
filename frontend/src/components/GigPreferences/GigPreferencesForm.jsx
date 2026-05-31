@@ -59,7 +59,7 @@ const FieldLabel = ({ children, optional }) => (
   </label>
 );
 
-const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, submitLabel = "Save preferences" }) => {
+const GigPreferencesForm = ({ initialPreferences, isSaving = false, onCancel, onSave, submitLabel = "Save preferences" }) => {
   const [preferences, setPreferences] = useState(() => mergePreferences(initialPreferences));
   const [customSkill, setCustomSkill] = useState("");
   const [touched, setTouched] = useState(false);
@@ -131,30 +131,30 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
   };
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-6">
-      <div className="rounded-lg border border-blue-300 bg-white p-5">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <form onSubmit={handleSubmit} className="rounded-lg border border-blue-300 bg-white p-5 shadow-sm shadow-blue-950/5 sm:p-6">
+      <div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-sm font-black uppercase text-blue-700">Gig preferences</p>
             <h2 className="mt-2 text-2xl font-black text-slate-950">Help GigWorld understand your best-fit work.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
+              These answers help match tech and non-tech gigs to your interests, skills, and preferred work style.
+            </p>
           </div>
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-center">
-            <p className="text-2xl font-black text-emerald-700">{completion}%</p>
-            <p className="text-xs font-black uppercase text-emerald-700">Complete</p>
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2">
+            <span className="text-base font-black text-emerald-700">{completion}%</span>
+            <span className="text-xs font-black uppercase text-emerald-700">Complete</span>
           </div>
         </div>
-        <p className="mt-4 text-sm leading-6 text-slate-600">
-          These answers help match tech and non-tech gigs to your interests, skills, and preferred work style.
-        </p>
       </div>
 
       {touched && !coreIsValid && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">
           Please complete current status, category, skills, experience, and work type.
         </div>
       )}
 
-      <section className="rounded-lg border border-blue-300 bg-white p-5">
+      <section className="mt-6 border-t border-blue-200 pt-6">
         <FieldLabel>Current status</FieldLabel>
         <div className="mt-3 flex flex-wrap gap-2">
           {currentStatusOptions.map((option) => (
@@ -168,7 +168,7 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
         </div>
       </section>
 
-      <section className="rounded-lg border border-blue-300 bg-white p-5">
+      <section className="mt-6 border-t border-blue-200 pt-6">
         <FieldLabel>Interested gig categories</FieldLabel>
         <div className="mt-3 flex flex-wrap gap-2">
           {categoryOptions.map((option) => (
@@ -182,7 +182,7 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
         </div>
       </section>
 
-      <section className="rounded-lg border border-blue-300 bg-white p-5">
+      <section className="mt-6 border-t border-blue-200 pt-6">
         <FieldLabel>Skills</FieldLabel>
         <div className="mt-3 flex flex-wrap gap-2">
           {popularSkills.map((skill) => (
@@ -194,12 +194,12 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
             />
           ))}
         </div>
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
             type="text"
             value={customSkill}
             onChange={(event) => setCustomSkill(event.target.value)}
-            className="w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+            className="w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20 sm:max-w-sm"
             placeholder="Add your own skill"
           />
           <button
@@ -229,7 +229,7 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
         )}
       </section>
 
-      <section className="grid gap-5 rounded-lg border border-blue-300 bg-white p-5 lg:grid-cols-2">
+      <section className="mt-6 grid gap-5 border-t border-blue-200 pt-6 lg:grid-cols-2">
         <div>
           <FieldLabel>Experience level</FieldLabel>
           <select
@@ -271,17 +271,28 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onSave, subm
         </div>
       </section>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-6 flex flex-col gap-3 border-t border-blue-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-semibold text-slate-500">
           You can edit these answers anytime from your profile.
         </p>
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="rounded-lg bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-300"
-        >
-          {isSaving ? "Saving..." : submitLabel}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-blue-300 bg-white px-5 py-3 text-sm font-black text-blue-700 shadow-sm shadow-blue-950/5 transition hover:border-blue-500 hover:bg-blue-50"
+            >
+              Cancel edit
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="rounded-lg bg-blue-700 px-6 py-3 text-sm font-black text-white shadow-lg shadow-blue-700/20 transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-300"
+          >
+            {isSaving ? "Saving..." : submitLabel}
+          </button>
+        </div>
       </div>
     </form>
   );

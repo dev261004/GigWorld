@@ -63,6 +63,17 @@ const cleanLinks = (links) => {
         .filter((link) => link.label || link.url);
 };
 
+const getInvalidHttpsLink = (links) => {
+    if (!Array.isArray(links)) {
+        return null;
+    }
+
+    return links.find((link) => {
+        const url = cleanString(link.url);
+        return url && !/^https:\/\//i.test(url);
+    });
+};
+
 const cleanEducationDetails = (educationDetails) => {
     if (!Array.isArray(educationDetails)) {
         return [];
@@ -180,13 +191,11 @@ const getPortfolioPayload = async (userId) => {
         Project.find({ freelancer: userId }).sort({ createdAt: -1 })
     ]);
 
-    portfolio.projects = projects.map((project) => project._id);
-    await portfolio.save();
-
-    const hydratedPortfolio = await Portfolio.findById(portfolio._id).populate("projects");
-
     return {
-        portfolio: hydratedPortfolio,
+        portfolio: {
+            ...portfolio.toObject(),
+            projects
+        },
         user
     };
 };
@@ -240,6 +249,14 @@ export async function saveMyPortfolio(req, res) {
         const portfolio = await getPortfolioDocument(userId);
         const cleanedEducationDetails = cleanEducationDetails(educationDetails);
         const cleanedWorkExperienceDetails = cleanWorkExperienceDetails(workExperienceDetails);
+        const invalidLink = getInvalidHttpsLink(links);
+
+        if (invalidLink) {
+            const linkLabel = cleanString(invalidLink.label) || "Link";
+            return res.status(400).json({
+                message: `${linkLabel} URL must start with https://`
+            });
+        }
 
         portfolio.bio = cleanString(bio);
         portfolio.educationDetails = cleanedEducationDetails;

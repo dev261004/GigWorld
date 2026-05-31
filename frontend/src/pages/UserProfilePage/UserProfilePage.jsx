@@ -56,6 +56,27 @@ const profileActions = [
   },
 ];
 
+const formatPreferenceList = (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "Not set";
+  }
+
+  return items.join(", ");
+};
+
+const getPreferenceCompletion = (preferences = {}) => {
+  const fields = [
+    preferences.currentStatus,
+    preferences.categories?.length,
+    preferences.skills?.length,
+    preferences.experienceLevel,
+    preferences.workTypes?.length,
+    preferences.preferredBudget,
+  ];
+
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+};
+
 const ProfilePageShimmer = () => (
   <div className="min-h-screen bg-[#f7fafc] text-slate-950">
     <Navbar />
@@ -142,8 +163,19 @@ const UserProfilePage = () => {
   const [profileUser, setProfileUser] = useState(() => getStoredUser());
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const [isEditingPreferences, setIsEditingPreferences] = useState(false);
   const [preferenceMessage, setPreferenceMessage] = useState("");
   const profile = getProfileFromUser(profileUser);
+  const preferences = profile.gigPreferences || {};
+  const preferenceCompletion = getPreferenceCompletion(preferences);
+  const preferenceSummary = [
+    { label: "Current status", value: preferences.currentStatus || "Not set" },
+    { label: "Categories", value: formatPreferenceList(preferences.categories) },
+    { label: "Skills", value: formatPreferenceList(preferences.skills) },
+    { label: "Experience", value: preferences.experienceLevel || "Not set" },
+    { label: "Work type", value: formatPreferenceList(preferences.workTypes) },
+    { label: "Budget", value: preferences.preferredBudget || "Not set" },
+  ];
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -189,6 +221,7 @@ const UserProfilePage = () => {
       }
 
       setPreferenceMessage("Gig preferences saved successfully.");
+      setIsEditingPreferences(false);
     } catch (error) {
       console.error("Error saving gig preferences:", error);
       setPreferenceMessage(error.response?.data?.message || "Could not save gig preferences.");
@@ -285,12 +318,58 @@ const UserProfilePage = () => {
               {preferenceMessage}
             </div>
           )}
-          <GigPreferencesForm
-            initialPreferences={profile.gigPreferences}
-            isSaving={isSavingPreferences}
-            onSave={handleSavePreferences}
-            submitLabel="Save profile preferences"
-          />
+          {isEditingPreferences ? (
+            <div>
+              <GigPreferencesForm
+                initialPreferences={profile.gigPreferences}
+                isSaving={isSavingPreferences}
+                onCancel={() => {
+                  setPreferenceMessage("");
+                  setIsEditingPreferences(false);
+                }}
+                onSave={handleSavePreferences}
+                submitLabel="Save profile preferences"
+              />
+            </div>
+          ) : (
+            <div className="rounded-lg border border-blue-300 bg-white p-5 shadow-sm shadow-blue-950/5 sm:p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-sm font-black uppercase tracking-wide text-blue-700">Gig preferences</p>
+                  <h2 className="mt-2 text-2xl font-black text-slate-950">Your matching profile</h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
+                    A quick summary of the work style, skills, and gig types GigWorld uses to personalize your feed.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row lg:items-center">
+                  <div className="inline-flex h-12 min-w-[150px] items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 text-sm font-black text-emerald-700">
+                    <span>{preferenceCompletion}%</span>
+                    <span>Complete</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreferenceMessage("");
+                      setIsEditingPreferences(true);
+                    }}
+                    className="inline-flex h-12 min-w-[150px] items-center justify-center rounded-full border border-blue-300 bg-blue-700 px-5 text-sm font-black text-white shadow-sm shadow-blue-700/20 transition hover:bg-blue-800"
+                  >
+                    Edit preferences
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-6 grid border-t border-blue-200 md:grid-cols-2 xl:grid-cols-3">
+                {preferenceSummary.map((item) => (
+                  <div key={item.label} className="border-b border-blue-200 py-4 md:px-4 md:first:pl-0 xl:[&:nth-child(3n+1)]:pl-0">
+                    <p className="text-xs font-black uppercase text-blue-700">{item.label}</p>
+                    <p className="mt-2 break-words text-sm font-bold leading-6 text-slate-800">{item.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
       </main>

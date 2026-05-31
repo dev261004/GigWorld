@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import CalendarInput from "../../components/CalendarInput/CalendarInput";
@@ -57,6 +57,26 @@ const normalizeLinks = (links = []) => {
   });
   const customLinks = links.filter((link) => !defaultLinks.some((defaultLink) => defaultLink.label === link.label));
   return [...mergedLinks, ...customLinks];
+};
+
+const getLinkUrlError = (link = {}) => {
+  const url = String(link.url || "").trim();
+
+  if (!url || /^https:\/\//i.test(url)) {
+    return "";
+  }
+
+  return "URL must start with https://";
+};
+
+const getFirstLinkError = (links = []) => {
+  const invalidLink = links.find((link) => getLinkUrlError(link));
+
+  if (!invalidLink) {
+    return "";
+  }
+
+  return `${invalidLink.label || "Link"} URL must start with https://`;
 };
 
 const hasEducationEntryValue = (entry = {}) =>
@@ -227,6 +247,48 @@ const normalizePortfolio = (portfolio = {}) => ({
   educationDetails: normalizeEducationDetails(portfolio.educationDetails, portfolio.education),
   workExperienceDetails: normalizeWorkExperienceDetails(portfolio.workExperienceDetails, portfolio.workExperience),
 });
+
+const getPortfolioDraftKey = (userId) => `gigworld:portfolio-draft:${userId}`;
+
+const pickPortfolioDraft = (portfolio = {}) => ({
+  bio: portfolio.bio || "",
+  education: portfolio.education || "",
+  educationDetails: portfolio.educationDetails || [emptyEducationEntry],
+  workExperience: portfolio.workExperience || "",
+  workExperienceDetails: portfolio.workExperienceDetails || [emptyWorkExperienceEntry],
+  links: portfolio.links || defaultLinks,
+});
+
+const isProjectFormEmpty = (projectForm = emptyProjectForm, editingProjectId = "") =>
+  !editingProjectId && !Object.values(projectForm).some((value) => String(value || "").trim());
+
+const readPortfolioDraft = (userId) => {
+  if (!userId) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem(getPortfolioDraftKey(userId)) || "null");
+  } catch {
+    return null;
+  }
+};
+
+const writePortfolioDraft = (userId, draft) => {
+  if (!userId) {
+    return;
+  }
+
+  localStorage.setItem(getPortfolioDraftKey(userId), JSON.stringify(draft));
+};
+
+const clearPortfolioDraft = (userId) => {
+  if (!userId) {
+    return;
+  }
+
+  localStorage.removeItem(getPortfolioDraftKey(userId));
+};
 
 const getFileUrl = (resume) => (resume?.url ? `${API_BASE_URL}${resume.url}` : "");
 
@@ -435,6 +497,10 @@ const PortfolioPage = () => {
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
   const [toast, setToast] = useState("");
   const [error, setError] = useState("");
+  const [draftUserId, setDraftUserId] = useState("");
+  const [isDraftReady, setIsDraftReady] = useState(false);
+  const [hasPortfolioDraft, setHasPortfolioDraft] = useState(false);
+  const [hasProjectDraft, setHasProjectDraft] = useState(false);
 
   const skills = useMemo(() => user?.gigPreferences?.skills || [], [user]);
   const applicationText = useMemo(
@@ -446,41 +512,104 @@ const PortfolioPage = () => {
   const educationText = useMemo(() => buildEducationText(portfolio), [portfolio]);
   const workExperienceText = useMemo(() => buildWorkExperienceText(portfolio), [portfolio]);
 
-  const showToast = (message) => {
+  const showToast = useCallback((message) => {
     setToast(message);
     window.setTimeout(() => setToast(""), 2400);
-  };
+  }, []);
 
-  const fetchPortfolio = async ({ showLoading = true } = {}) => {
+  const fetchPortfolio = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading) {
       setIsLoading(true);
     }
     setError("");
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      setError("Please sign in to load your portfolio.");
+      if (showLoading) {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     try {
       const response = await axios.get(`${API_BASE_URL}/api/v1/portfolio/me`, {
         headers: getAuthHeaders(),
       });
       const nextPortfolio = response.data?.portfolio || {};
+      const nextUser = response.data?.user || null;
+      const savedDraft = readPortfolioDraft(nextUser?._id);
+      const draftProjectForm = savedDraft?.projectForm ? { ...emptyProjectForm, ...savedDraft.projectForm } : emptyProjectForm;
+      const draftEditingProjectId = savedDraft?.editingProjectId || "";
 
-      setUser(response.data?.user || null);
-      setPortfolio(normalizePortfolio(nextPortfolio));
+      setUser(nextUser);
+      setDraftUserId(nextUser?._id || "");
+      setPortfolio(savedDraft?.portfolio ? normalizePortfolio({ ...nextPortfolio, ...savedDraft.portfolio }) : normalizePortfolio(nextPortfolio));
+      setProjectForm(draftProjectForm);
+      setEditingProjectId(draftEditingProjectId);
+      setHasPortfolioDraft(Boolean(savedDraft?.portfolio));
+      setHasProjectDraft(!isProjectFormEmpty(draftProjectForm, draftEditingProjectId));
+      setIsDraftReady(true);
       setProjects(nextPortfolio.projects || []);
+      if (savedDraft?.portfolio || !isProjectFormEmpty(draftProjectForm, draftEditingProjectId)) {
+        showToast("Unsaved portfolio draft restored.");
+      }
     } catch (requestError) {
       console.error("Error fetching portfolio:", requestError);
-      setError("Portfolio could not be loaded right now.");
+      setError(
+        requestError.response?.status === 401
+          ? "Your session expired. Please sign in again to load your portfolio."
+          : requestError.response?.data?.message || "Portfolio could not be loaded right now.",
+      );
+      setIsDraftReady(true);
     } finally {
       if (showLoading) {
         setIsLoading(false);
       }
     }
-  };
+  }, [showToast]);
 
   useEffect(() => {
     fetchPortfolio();
-  }, []);
+  }, [fetchPortfolio]);
+
+  useEffect(() => {
+    if (!isDraftReady || !draftUserId || isLoading) {
+      return;
+    }
+
+    if (!hasPortfolioDraft && !hasProjectDraft) {
+      clearPortfolioDraft(draftUserId);
+      return;
+    }
+
+    const nextDraft = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (hasPortfolioDraft) {
+      nextDraft.portfolio = pickPortfolioDraft(portfolio);
+    }
+
+    if (hasProjectDraft) {
+      nextDraft.projectForm = projectForm;
+      nextDraft.editingProjectId = editingProjectId;
+    }
+
+    writePortfolioDraft(draftUserId, nextDraft);
+  }, [
+    draftUserId,
+    editingProjectId,
+    hasPortfolioDraft,
+    hasProjectDraft,
+    isDraftReady,
+    isLoading,
+    portfolio,
+    projectForm,
+  ]);
 
   const handlePortfolioChange = (field, value) => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => ({
       ...current,
       [field]: value,
@@ -488,6 +617,7 @@ const PortfolioPage = () => {
   };
 
   const handleEducationChange = (index, field, value) => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => ({
       ...current,
       educationDetails: (current.educationDetails || [emptyEducationEntry]).map((entry, entryIndex) =>
@@ -497,6 +627,7 @@ const PortfolioPage = () => {
   };
 
   const addEducationEntry = () => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => ({
       ...current,
       educationDetails: [...(current.educationDetails || []), emptyEducationEntry],
@@ -504,6 +635,7 @@ const PortfolioPage = () => {
   };
 
   const removeEducationEntry = (index) => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => {
       const nextEntries = (current.educationDetails || []).filter((_, entryIndex) => entryIndex !== index);
 
@@ -515,6 +647,7 @@ const PortfolioPage = () => {
   };
 
   const handleWorkExperienceChange = (index, field, value) => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => ({
       ...current,
       workExperienceDetails: (current.workExperienceDetails || [emptyWorkExperienceEntry]).map((entry, entryIndex) =>
@@ -524,6 +657,7 @@ const PortfolioPage = () => {
   };
 
   const addWorkExperienceEntry = () => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => ({
       ...current,
       workExperienceDetails: [...(current.workExperienceDetails || []), emptyWorkExperienceEntry],
@@ -531,6 +665,7 @@ const PortfolioPage = () => {
   };
 
   const removeWorkExperienceEntry = (index) => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => {
       const nextEntries = (current.workExperienceDetails || []).filter((_, entryIndex) => entryIndex !== index);
 
@@ -542,6 +677,7 @@ const PortfolioPage = () => {
   };
 
   const handleLinkChange = (index, field, value) => {
+    setHasPortfolioDraft(true);
     setPortfolio((current) => ({
       ...current,
       links: current.links.map((link, linkIndex) =>
@@ -550,10 +686,34 @@ const PortfolioPage = () => {
     }));
   };
 
+  const removeLink = (index) => {
+    setHasPortfolioDraft(true);
+    setPortfolio((current) => ({
+      ...current,
+      links: current.links.filter((_, linkIndex) => linkIndex !== index),
+    }));
+  };
+
+  const handleProjectFormChange = (field, value) => {
+    setHasProjectDraft(true);
+    setProjectForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  };
+
   const handleSavePortfolio = async (event) => {
     event.preventDefault();
-    setIsSavingPortfolio(true);
     setError("");
+
+    const linkError = getFirstLinkError(portfolio.links);
+
+    if (linkError) {
+      setError(`${linkError}. Example: https://example.com`);
+      return;
+    }
+
+    setIsSavingPortfolio(true);
 
     try {
       const response = await axios.put(
@@ -572,10 +732,11 @@ const PortfolioPage = () => {
 
       setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
+      setHasPortfolioDraft(false);
       showToast("Portfolio details saved.");
     } catch (requestError) {
       console.error("Error saving portfolio:", requestError);
-      setError("Portfolio details could not be saved.");
+      setError(requestError.response?.data?.message || "Portfolio details could not be saved.");
     } finally {
       setIsSavingPortfolio(false);
     }
@@ -596,20 +757,32 @@ const PortfolioPage = () => {
 
     try {
       if (editingProjectId) {
-        await axios.put(`${API_BASE_URL}/api/v1/projects/${editingProjectId}`, payload, {
+        const response = await axios.put(`${API_BASE_URL}/api/v1/projects/${editingProjectId}`, payload, {
           headers: getAuthHeaders(),
         });
+        const updatedProject = response.data?.project;
+
+        if (updatedProject) {
+          setProjects((current) =>
+            current.map((project) => (project._id === updatedProject._id ? updatedProject : project)),
+          );
+        }
         showToast("Project updated.");
       } else {
-        await axios.post(`${API_BASE_URL}/api/v1/projects/create`, payload, {
+        const response = await axios.post(`${API_BASE_URL}/api/v1/projects/create`, payload, {
           headers: getAuthHeaders(),
         });
+        const createdProject = response.data?.project;
+
+        if (createdProject) {
+          setProjects((current) => [createdProject, ...current]);
+        }
         showToast("Project added.");
       }
 
       setProjectForm(emptyProjectForm);
       setEditingProjectId("");
-      await fetchPortfolio({ showLoading: false });
+      setHasProjectDraft(false);
     } catch (requestError) {
       console.error("Error saving project:", requestError);
       setError("Project could not be saved.");
@@ -619,6 +792,7 @@ const PortfolioPage = () => {
   };
 
   const handleEditProject = (project) => {
+    setHasProjectDraft(true);
     setEditingProjectId(project._id);
     setProjectForm({
       title: project.title || "",
@@ -636,7 +810,7 @@ const PortfolioPage = () => {
         headers: getAuthHeaders(),
       });
       showToast("Project deleted.");
-      await fetchPortfolio({ showLoading: false });
+      setProjects((current) => current.filter((project) => project._id !== projectId));
     } catch (requestError) {
       console.error("Error deleting project:", requestError);
       setError("Project could not be deleted.");
@@ -1003,21 +1177,39 @@ const PortfolioPage = () => {
                     </div>
                     <div className="mt-3 grid gap-3">
                       {(portfolio.links || []).map((link, index) => (
-                        <div key={`${link.label}-${index}`} className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
-                          <input
-                            type="text"
-                            value={link.label || ""}
-                            onChange={(event) => handleLinkChange(index, "label", event.target.value)}
-                            className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-                            placeholder="Label"
-                          />
-                          <input
-                            type="url"
-                            value={link.url || ""}
-                            onChange={(event) => handleLinkChange(index, "url", event.target.value)}
-                            className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
-                            placeholder="https://..."
-                          />
+                        <div key={`${link.label}-${index}`} className="grid gap-2">
+                          <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)_auto]">
+                            <input
+                              type="text"
+                              value={link.label || ""}
+                              onChange={(event) => handleLinkChange(index, "label", event.target.value)}
+                              className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
+                              placeholder="Label"
+                            />
+                            <input
+                              type="text"
+                              value={link.url || ""}
+                              onChange={(event) => handleLinkChange(index, "url", event.target.value)}
+                              className={`rounded-lg text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20 ${
+                                getLinkUrlError(link) ? "border-red-300 bg-red-50" : "border-blue-200"
+                              }`}
+                              placeholder="https://example.com"
+                            />
+                            {index >= defaultLinks.length && (
+                              <button
+                                type="button"
+                                onClick={() => removeLink(index)}
+                                className="rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-600 transition hover:bg-red-50"
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                          {getLinkUrlError(link) && (
+                            <p className="text-xs font-bold text-red-600">
+                              {getLinkUrlError(link)}. Example: https://example.com
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1051,6 +1243,7 @@ const PortfolioPage = () => {
                       onClick={() => {
                         setEditingProjectId("");
                         setProjectForm(emptyProjectForm);
+                        setHasProjectDraft(false);
                       }}
                       className="text-sm font-black text-blue-700 underline decoration-blue-300 underline-offset-8"
                     >
@@ -1063,14 +1256,14 @@ const PortfolioPage = () => {
                   <input
                     type="text"
                     value={projectForm.title}
-                    onChange={(event) => setProjectForm((current) => ({ ...current, title: event.target.value }))}
+                    onChange={(event) => handleProjectFormChange("title", event.target.value)}
                     className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                     placeholder="Project title"
                     required
                   />
                   <textarea
                     value={projectForm.description}
-                    onChange={(event) => setProjectForm((current) => ({ ...current, description: event.target.value }))}
+                    onChange={(event) => handleProjectFormChange("description", event.target.value)}
                     className="min-h-28 rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                     placeholder="What did you build or deliver?"
                     required
@@ -1079,14 +1272,14 @@ const PortfolioPage = () => {
                     <input
                       type="text"
                       value={projectForm.technologies}
-                      onChange={(event) => setProjectForm((current) => ({ ...current, technologies: event.target.value }))}
+                      onChange={(event) => handleProjectFormChange("technologies", event.target.value)}
                       className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                       placeholder="Skills used, comma-separated"
                     />
                     <input
                       type="url"
                       value={projectForm.projectLink}
-                      onChange={(event) => setProjectForm((current) => ({ ...current, projectLink: event.target.value }))}
+                      onChange={(event) => handleProjectFormChange("projectLink", event.target.value)}
                       className="rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20"
                       placeholder="Project link"
                     />
