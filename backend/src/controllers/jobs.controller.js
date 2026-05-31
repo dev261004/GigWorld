@@ -50,6 +50,14 @@ const postedWithinDays = {
   "30d": 30,
 };
 
+const jobSortOptions = {
+  new: { new_until: -1, first_seen_at: -1, postedAt: -1, createdAt: -1 },
+  discovered: { first_seen_at: -1, postedAt: -1, createdAt: -1 },
+  posted: { postedAt: -1, createdAt: -1 },
+  budgetHigh: { "budget.max": -1, "budget.min": -1, postedAt: -1, createdAt: -1 },
+  budgetLow: { "budget.min": 1, "budget.max": 1, postedAt: -1, createdAt: -1 },
+};
+
 const experiencePatterns = {
   entry: ["entry", "beginner", "fresher", "junior", "no experience"],
   junior: ["junior", "0-2", "1+", "entry"],
@@ -194,7 +202,7 @@ const getAllJobs = asyncHandler(async(req, res) => {
     // } catch (err) {
     //  throw new ApiError(500,'Something went wong while getting all jobs');
     // }
-    const { searchKeyword = "", filters = {}, page = 1, perPage = 10 } = req.body || {};
+    const { searchKeyword = "", filters = {}, page = 1, perPage = 10, sortBy = "new" } = req.body || {};
     const {
       location,
       locations = [],
@@ -213,6 +221,7 @@ const getAllJobs = asyncHandler(async(req, res) => {
     const now = new Date();
     const currentPage = Math.max(Number(page) || 1, 1);
     const pageSize = Math.max(Number(perPage) || 10, 1);
+    const sortConditions = jobSortOptions[sortBy] || jobSortOptions.new;
     const andConditions = [activeJobConditions(now)];
     
     if (searchKeyword) {
@@ -257,7 +266,7 @@ const getAllJobs = asyncHandler(async(req, res) => {
   
     try {
       const jobs = await Job.find(filterConditions)
-        .sort({ postedAt: -1, createdAt: -1 })
+        .sort(sortConditions)
         .skip((currentPage - 1) * pageSize)
         .limit(pageSize)
         .lean();

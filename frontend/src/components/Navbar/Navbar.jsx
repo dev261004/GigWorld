@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { jwtDecode } from "jwt-decode";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../BrandLogo/BrandLogo";
@@ -56,6 +56,7 @@ const Navbar = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [profileInitial, setProfileInitial] = useState("U");
   const [profileName, setProfileName] = useState("GigWorld member");
+  const gigsMenuCloseTimerRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -65,6 +66,39 @@ const Navbar = () => {
       setProfileName(getProfileName(token));
     }
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (gigsMenuCloseTimerRef.current) {
+        window.clearTimeout(gigsMenuCloseTimerRef.current);
+      }
+    };
+  }, []);
+
+  const clearGigsMenuCloseTimer = () => {
+    if (gigsMenuCloseTimerRef.current) {
+      window.clearTimeout(gigsMenuCloseTimerRef.current);
+      gigsMenuCloseTimerRef.current = null;
+    }
+  };
+
+  const openGigsMenu = () => {
+    clearGigsMenuCloseTimer();
+    setIsGigsMenuOpen(true);
+  };
+
+  const closeGigsMenu = () => {
+    clearGigsMenuCloseTimer();
+    setIsGigsMenuOpen(false);
+  };
+
+  const scheduleGigsMenuClose = () => {
+    clearGigsMenuCloseTimer();
+    gigsMenuCloseTimerRef.current = window.setTimeout(() => {
+      setIsGigsMenuOpen(false);
+      gigsMenuCloseTimerRef.current = null;
+    }, 180);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("authToken");
@@ -94,12 +128,15 @@ const Navbar = () => {
             <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/">Home</Link></li>
             <li
               className="relative w-full text-center lg:w-auto"
-              onMouseEnter={() => setIsGigsMenuOpen(true)}
-              onMouseLeave={() => setIsGigsMenuOpen(false)}
+              onMouseEnter={openGigsMenu}
+              onMouseLeave={scheduleGigsMenuClose}
             >
               <button
                 type="button"
-                onClick={() => setIsGigsMenuOpen((current) => !current)}
+                onClick={() => {
+                  clearGigsMenuCloseTimer();
+                  setIsGigsMenuOpen((current) => !current);
+                }}
                 className={`inline-flex items-center justify-center border-b-2 px-3 py-2 text-slate-700 transition hover:border-blue-700 hover:text-blue-700 ${
                   isGigsMenuOpen ? "border-blue-700 text-blue-700" : "border-transparent"
                 }`}
@@ -109,24 +146,31 @@ const Navbar = () => {
                 Gigs
               </button>
               {isGigsMenuOpen && (
-                <div className="mt-2 grid w-full gap-1 rounded-lg border border-blue-100 bg-white p-2 text-left shadow-xl shadow-blue-950/10 lg:absolute lg:left-1/2 lg:top-full lg:mt-3 lg:w-56 lg:-translate-x-1/2">
-                  <Link
-                    className="rounded-md px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                    to="/work"
-                    onClick={() => setIsGigsMenuOpen(false)}
-                  >
-                    Browse gigs
-                  </Link>
-                  <Link
-                    className="rounded-md px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                    to="/job-application-status"
-                    onClick={() => setIsGigsMenuOpen(false)}
-                  >
-                    Application tracker
-                  </Link>
+                <div
+                  className="mt-2 w-full lg:absolute lg:left-1/2 lg:top-full lg:mt-0 lg:w-56 lg:-translate-x-1/2 lg:pt-3"
+                  onMouseEnter={openGigsMenu}
+                  onMouseLeave={scheduleGigsMenuClose}
+                >
+                  <div className="grid gap-1 rounded-lg border border-blue-100 bg-white p-2 text-left shadow-xl shadow-blue-950/10">
+                    <Link
+                      className="rounded-md px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      to="/work"
+                      onClick={closeGigsMenu}
+                    >
+                      Browse gigs
+                    </Link>
+                    <Link
+                      className="rounded-md px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
+                      to="/job-application-status"
+                      onClick={closeGigsMenu}
+                    >
+                      Application tracker
+                    </Link>
+                  </div>
                 </div>
               )}
             </li>
+            <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/about">About</Link></li>
             <li><Link className="rounded-lg px-3 py-2 text-slate-700 transition hover:bg-white hover:text-blue-700" to="/contact">Contact</Link></li>
           </ul>
           <div className="my-4 flex items-center gap-4 lg:my-0 lg:ml-auto">

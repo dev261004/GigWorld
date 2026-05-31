@@ -67,6 +67,14 @@ const postedWithinOptions = [
   { label: "Last month", value: "30d" },
 ];
 
+const sortOptions = [
+  { label: "New gigs first", value: "new" },
+  { label: "Recently discovered", value: "discovered" },
+  { label: "Recently posted", value: "posted" },
+  { label: "Budget: high to low", value: "budgetHigh" },
+  { label: "Budget: low to high", value: "budgetLow" },
+];
+
 const fallbackProjectStatuses = ["Open", "Urgent", "Actively Hiring", "Long Term", "Short Term"];
 
 const SaveIcon = () => (
@@ -108,7 +116,7 @@ const getSourceMeta = (source) => {
   if (!normalizedSource || normalizedSource === "unknown") {
     return {
       name: "GigWorld Source",
-      logo: "/gigworld.svg",
+      logo: "/gigworld-mark-transparent.png",
     };
   }
 
@@ -126,7 +134,7 @@ const getSourceMeta = (source) => {
   if (!matchedSource) {
     return {
       name: "GigWorld Source",
-      logo: "/gigworld.svg",
+      logo: "/gigworld-mark-transparent.png",
     };
   }
 
@@ -253,6 +261,7 @@ const WorkSearchPage = () => {
   const [filterOptions, setFilterOptions] = useState({});
   const [filters, setFilters] = useState(emptyFilters);
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [sortBy, setSortBy] = useState("new");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalJobs, setTotalJobs] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -293,6 +302,7 @@ const WorkSearchPage = () => {
         const res = await axios.post("http://localhost:2610/api/v1/jobs/", {
           searchKeyword,
           filters,
+          sortBy,
           page: currentPage,
           perPage: jobsPerPage,
         });
@@ -309,7 +319,7 @@ const WorkSearchPage = () => {
     };
 
     fetchJobs();
-  }, [currentPage, filters, searchKeyword]);
+  }, [currentPage, filters, searchKeyword, sortBy]);
 
   const sourceOptions = (
     filterOptions.sourceWebsites?.length
@@ -335,6 +345,11 @@ const WorkSearchPage = () => {
 
   const updateFilter = (name, value) => {
     setFilters((current) => ({ ...current, [name]: value }));
+    setCurrentPage(1);
+  };
+
+  const updateSort = (value) => {
+    setSortBy(value);
     setCurrentPage(1);
   };
 
@@ -824,9 +839,37 @@ const WorkSearchPage = () => {
                 <p className="text-sm font-bold uppercase text-blue-700">Gig posts</p>
                 <h2 className="text-2xl font-black text-slate-950">Browse matching gigs</h2>
               </div>
-              <p className="text-sm font-semibold text-slate-500">
-                Page {currentPage} of {totalPages}
-              </p>
+              <div className="flex flex-col gap-2 sm:items-end">
+                <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                  <span className="text-xs uppercase tracking-wide text-blue-700">Sort</span>
+                  <span className="relative inline-flex">
+                    <select
+                      value={sortBy}
+                      onChange={(event) => updateSort(event.target.value)}
+                      className="min-w-[210px] appearance-none rounded-full border border-blue-300 bg-gradient-to-r from-white to-blue-50 py-3 pl-5 pr-12 text-sm font-bold leading-5 text-slate-950 shadow-sm shadow-blue-100/80 transition hover:border-blue-500 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20"
+                    >
+                      {sortOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <svg
+                      className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-700"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                    </svg>
+                  </span>
+                </label>
+                <p className="text-sm font-semibold text-slate-500">
+                  Page {currentPage} of {totalPages}
+                </p>
+              </div>
             </div>
 
             {trackingMessage && (

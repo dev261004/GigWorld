@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 const footerLinks = [
   { label: "Home", to: "/" },
   { label: "Browse gig", to: "/work" },
+  { label: "About", to: "/about" },
   { label: "Contact", to: "/contact" },
 ];
 
@@ -11,9 +12,9 @@ const Footer = () => (
     <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
       <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
         <div>
-          <Link to="/" className="inline-flex items-center gap-3">
-            <img src="/gigworld.svg" alt="GigWorld logo" className="h-11 w-11" />
-            <span className="text-2xl font-black">
+          <Link to="/" className="inline-flex items-center gap-3 transition hover:-translate-y-0.5">
+            <img src="/gigworld-mark-transparent.png" alt="" aria-hidden="true" className="h-16 w-28 object-contain" />
+            <span className="text-3xl font-black">
               Gig<span className="text-sky-300">World</span>
             </span>
           </Link>

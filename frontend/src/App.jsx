@@ -4,6 +4,7 @@ import SigninPage from "./pages/SigninPage/SigninPage"
 import DashboardPage from "./pages/DashboardPage/DashboardPage"
 import PricingPage from "./pages/PricingPage/PricingPage"
 import ContactPage from "./pages/ContactPage/ContactPage"
+import AboutPage from "./pages/AboutPage/AboutPage"
 import WorkSearchPage from "./pages/WorkSearchPage/WorkSearchPage"
 // import ProfilePage from "./pages/ProfilePage/ProfilePage"
 import SignupPage from "./pages/SignupPage/SignupPage"
@@ -34,6 +35,7 @@ function App() {
     <Route path="/dashboard" element={<DashboardPage />} />
     <Route path="/pricing" element={<PricingPage />} />
     <Route path="/contact" element={<ContactPage />} />
+    <Route path="/about" element={<AboutPage />} />
     <Route path="/work" element={<WorkSearchPage />} />
     <Route path="/gigs/:jobId" element={<GigDetailsPage />} />
     <Route path="/gig-preferences" element={<GigPreferencesPage />} />

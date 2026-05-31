@@ -49,7 +49,7 @@ const getSourceMeta = (source) => {
   if (!normalizedSource || normalizedSource === "unknown") {
     return {
       name: "GigWorld Source",
-      logo: "/gigworld.svg",
+      logo: "/gigworld-mark-transparent.png",
     };
   }
 

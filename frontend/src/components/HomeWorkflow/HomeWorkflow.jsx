@@ -21,7 +21,7 @@ const focusPoints = [
 ];
 
 const HomeWorkflow = () => (
-  <section className="bg-slate-50 py-20 sm:py-24">
+  <section className="bg-slate-50 pb-20 pt-10 sm:pb-24 sm:pt-12">
     <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:px-8">
       <div className="max-w-xl">
         <p className="text-sm font-bold uppercase text-blue-700">Built for freelancers</p>
