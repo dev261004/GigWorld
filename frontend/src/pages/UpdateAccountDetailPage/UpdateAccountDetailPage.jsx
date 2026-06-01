@@ -3,6 +3,8 @@ import axios from "axios";
 import { Link } from "react-router-dom";
 import Footer from "../../components/Footer/Footer";
 import Navbar from "../../components/Navbar/Navbar";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const emptyAccount = {
   fullName: "",
@@ -29,6 +31,7 @@ const getProviderLabel = (provider) => (provider === "google" ? "Google account"
 const getDisplayValue = (value) => value || "Not set";
 
 const UpdateAccountDetailsPage = () => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState(emptyAccount);
   const [savedAccount, setSavedAccount] = useState(emptyAccount);
   const [isEditing, setIsEditing] = useState(false);
@@ -71,14 +74,16 @@ const UpdateAccountDetailsPage = () => {
         localStorage.setItem("user", JSON.stringify(user));
       } catch (error) {
         console.error("Unable to load account details:", error);
-        setMessage({ type: "error", text: error.response?.data?.message || "Account details could not be loaded." });
+        const text = getReadableErrorMessage(error, TOAST_FAILURE.ACCOUNT_LOAD_FAILED);
+        setMessage({ type: "error", text });
+        showToast({ type: "error", message: text });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchAccount();
-  }, []);
+  }, [showToast]);
 
   const updateField = (field, value) => {
     const nextValueByField = {
@@ -97,7 +102,9 @@ const UpdateAccountDetailsPage = () => {
     event.preventDefault();
 
     if (!formIsValid) {
-      setMessage({ type: "error", text: fullNameError || usernameError });
+      const text = fullNameError || usernameError;
+      setMessage({ type: "error", text });
+      showToast({ type: "error", message: text });
       return;
     }
 
@@ -146,11 +153,15 @@ const UpdateAccountDetailsPage = () => {
         }));
       }
 
-      setMessage({ type: "success", text: "Account details updated successfully." });
+      const text = TOAST_SUCCESS.ACCOUNT_UPDATED;
+      setMessage({ type: "success", text });
+      showToast({ type: "success", message: text });
       setIsEditing(false);
     } catch (error) {
       console.error("Unable to update account details:", error);
-      setMessage({ type: "error", text: error.response?.data?.message || "Account details could not be updated." });
+      const text = getReadableErrorMessage(error, TOAST_FAILURE.ACCOUNT_UPDATE_FAILED);
+      setMessage({ type: "error", text });
+      showToast({ type: "error", message: text });
     } finally {
       setIsSaving(false);
     }

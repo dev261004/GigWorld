@@ -3,9 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import GigPreferencesForm from "../../components/GigPreferences/GigPreferencesForm";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE } from "../../constants/toastMessages";
 
 const GigPreferencesPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -26,7 +29,9 @@ const GigPreferencesPage = () => {
       navigate("/work");
     } catch (error) {
       console.error("Error saving gig preferences:", error);
-      setMessage(error.response?.data?.message || "Could not save your preferences. Please try again.");
+      const readableMessage = getReadableErrorMessage(error, TOAST_FAILURE.GIG_PREFERENCES_SAVE_FAILED);
+      setMessage(readableMessage);
+      showToast({ type: "error", message: readableMessage });
     } finally {
       setIsSaving(false);
     }

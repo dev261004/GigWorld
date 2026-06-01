@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import Footer from "../../components/Footer/Footer";
 import GigPreferencesForm from "../../components/GigPreferences/GigPreferencesForm";
 import Navbar from "../../components/Navbar/Navbar";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const getProfileFromUser = (user = {}) => {
   const displayName = user.name || user.fullName || user.username || "GigWorld member";
@@ -167,6 +169,7 @@ const ProfilePageShimmer = () => (
 );
 
 const UserProfilePage = () => {
+  const { showToast } = useToast();
   const [profileUser, setProfileUser] = useState(() => getStoredUser());
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
@@ -205,13 +208,17 @@ const UserProfilePage = () => {
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
+        showToast({
+          type: "error",
+          message: getReadableErrorMessage(error, TOAST_FAILURE.PROFILE_LOAD_FAILED),
+        });
       } finally {
         setIsLoadingProfile(false);
       }
     };
 
     fetchCurrentUser();
-  }, []);
+  }, [showToast]);
 
   const handleSavePreferences = async (preferences) => {
     setIsSavingPreferences(true);
@@ -228,11 +235,15 @@ const UserProfilePage = () => {
         localStorage.setItem("user", JSON.stringify(response.data.data));
       }
 
-      setPreferenceMessage("Gig preferences saved successfully.");
+      const message = TOAST_SUCCESS.GIG_PREFERENCES_SAVED;
+      setPreferenceMessage(message);
+      showToast({ type: "success", message });
       setIsEditingPreferences(false);
     } catch (error) {
       console.error("Error saving gig preferences:", error);
-      setPreferenceMessage(error.response?.data?.message || "Could not save gig preferences.");
+      const message = getReadableErrorMessage(error, TOAST_FAILURE.GIG_PREFERENCES_SAVE_FAILED);
+      setPreferenceMessage(message);
+      showToast({ type: "error", message });
     } finally {
       setIsSavingPreferences(false);
     }

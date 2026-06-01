@@ -142,6 +142,20 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onCancel, on
     });
   };
 
+  const addCustomSkill = () => {
+    addListValue("skills", customSkill);
+    setCustomSkill("");
+  };
+
+  const handleCustomSkillKeyDown = (event) => {
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) {
+      return;
+    }
+
+    event.preventDefault();
+    addCustomSkill();
+  };
+
   return (
     <form onSubmit={handleSubmit} className="rounded-lg border border-blue-300 bg-white p-5 shadow-sm shadow-blue-950/5 sm:p-6">
       <div>
@@ -211,15 +225,13 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onCancel, on
             type="text"
             value={customSkill}
             onChange={(event) => setCustomSkill(event.target.value)}
+            onKeyDown={handleCustomSkillKeyDown}
             className="w-full rounded-lg border-blue-200 text-sm shadow-sm focus:border-blue-600 focus:ring-blue-600/20 sm:max-w-sm"
             placeholder="Add your own skill"
           />
           <button
             type="button"
-            onClick={() => {
-              addListValue("skills", customSkill);
-              setCustomSkill("");
-            }}
+            onClick={addCustomSkill}
             className="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-800"
           >
             Add

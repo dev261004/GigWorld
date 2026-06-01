@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import GoogleAuthButton from "../../components/Auth/GoogleAuthButton";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const inputClass =
   "mt-2 block w-full rounded-md border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20";
@@ -82,6 +84,7 @@ const getSignupErrors = ({ fullName, username, email, password }) => {
 };
 
 const SignupPage = () => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     fullName: "",
     username: "",
@@ -156,6 +159,7 @@ const SignupPage = () => {
         password: true,
       });
       setFormData(cleanedFormData);
+      showToast({ type: "error", message: TOAST_FAILURE.SIGNUP_FORM_INVALID });
       return;
     }
 
@@ -173,17 +177,25 @@ const SignupPage = () => {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
+        showToast({ type: "success", message: TOAST_SUCCESS.ACCOUNT_CREATED });
         navigate("/signin");
       } else {
-        setError(
+        const message =
           response.status === 409
-            ? "A user with this email or username already exists."
-            : data.message || "We couldn't create your account. Please review the details and try again."
-        );
+            ? TOAST_FAILURE.USER_ALREADY_EXISTS
+            : getReadableErrorMessage(
+                data.message,
+                TOAST_FAILURE.SIGNUP_FAILED,
+              );
+
+        setError(message);
+        showToast({ type: "error", message });
       }
     } catch (error) {
       console.error("Error:", error);
-      setError("The server could not be reached. Please try again in a moment.");
+      const message = TOAST_FAILURE.SERVER_UNREACHABLE;
+      setError(message);
+      showToast({ type: "error", message });
     } finally {
       setIsSubmitting(false);
     }

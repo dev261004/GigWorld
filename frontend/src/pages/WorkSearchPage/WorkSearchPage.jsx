@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_INFO, TOAST_SUCCESS } from "../../constants/toastMessages";
 import { getGigBriefPreview } from "../../utils/gigBrief";
 
 const jobsPerPage = 10;
@@ -275,6 +277,7 @@ const GigCardSkeleton = () => (
 
 const WorkSearchPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [jobs, setJobs] = useState([]);
   const [filterOptions, setFilterOptions] = useState({});
   const [filters, setFilters] = useState(emptyFilters);
@@ -287,13 +290,11 @@ const WorkSearchPage = () => {
   const [isSourceDropdownOpen, setIsSourceDropdownOpen] = useState(false);
   const [trackingMessage, setTrackingMessage] = useState("");
   const [trackingPromptJob, setTrackingPromptJob] = useState(null);
-  const [trackingToasts, setTrackingToasts] = useState([]);
   const [savingJobIds, setSavingJobIds] = useState([]);
   const [preferencesIncomplete, setPreferencesIncomplete] = useState(false);
   const [isPreferenceNoticeDismissed, setIsPreferenceNoticeDismissed] = useState(
     () => localStorage.getItem(preferenceNoticeStorageKey) === "true",
   );
-  const toastTimersRef = useRef([]);
 
   useEffect(() => {
     const fetchFilterOptions = async () => {
@@ -307,12 +308,6 @@ const WorkSearchPage = () => {
     };
 
     fetchFilterOptions();
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      toastTimersRef.current.forEach((toastTimer) => window.clearTimeout(toastTimer));
-    };
   }, []);
 
   useEffect(() => {
@@ -346,14 +341,19 @@ const WorkSearchPage = () => {
         setPreferencesIncomplete(Boolean(res.data?.preferencesIncomplete));
       } catch (requestError) {
         console.error(requestError);
-        setError("Unable to load gigs right now. Please try again in a moment.");
+        const readableMessage = getReadableErrorMessage(
+          requestError,
+          TOAST_FAILURE.GIGS_LOAD_FAILED,
+        );
+        setError(readableMessage);
+        showToast({ type: "error", message: readableMessage });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchJobs();
-  }, [currentPage, filters, searchKeyword, sortBy]);
+  }, [currentPage, filters, searchKeyword, showToast, sortBy]);
 
   const sourceOptions = (
     filterOptions.sourceWebsites?.length
@@ -422,41 +422,35 @@ const WorkSearchPage = () => {
     setCurrentPage(1);
   };
 
+  const handleFilterSubmit = (event) => {
+    event.preventDefault();
+    setIsSourceDropdownOpen(false);
+    setCurrentPage(1);
+  };
+
   const dismissPreferenceNotice = () => {
     localStorage.setItem(preferenceNoticeStorageKey, "true");
     setIsPreferenceNoticeDismissed(true);
-  };
-
-  const showTrackerToast = (message, type = "success") => {
-    const toastId = `${Date.now()}-${Math.random()}`;
-    setTrackingToasts((current) => [...current, { id: toastId, message, type }].slice(-4));
-
-    const toastTimer = window.setTimeout(() => {
-      setTrackingToasts((current) => current.filter((toast) => toast.id !== toastId));
-      toastTimersRef.current = toastTimersRef.current.filter((timer) => timer !== toastTimer);
-    }, 4200);
-
-    toastTimersRef.current.push(toastTimer);
-  };
-
-  const dismissTrackerToast = (toastId) => {
-    setTrackingToasts((current) => current.filter((toast) => toast.id !== toastId));
   };
 
   const trackGig = async (job, status = "Viewed source", sourceOpened = false) => {
     const token = localStorage.getItem("authToken");
 
     if (!job?._id) {
-      const message = "Unable to save this gig right now.";
+      const message = TOAST_FAILURE.GIG_TRACKER_SAVE_FAILED;
       setTrackingMessage(message);
-      showTrackerToast(message, "error");
+      showToast({ type: "error", message });
       return false;
     }
 
     if (!token) {
-      const message = "Sign in to save this gig in your application tracker.";
+      const message = TOAST_FAILURE.SIGNIN_TO_TRACK;
       setTrackingMessage(message);
-      showTrackerToast(message, "error");
+      showToast({
+        type: "error",
+        message,
+        action: { label: "Sign in", onClick: () => navigate("/signin") },
+      });
       return false;
     }
 
@@ -479,19 +473,24 @@ const WorkSearchPage = () => {
       );
       const message = response.data?.message || (
         status === "Applied"
-          ? `${job.job_title || "Gig"} marked as applied.`
-          : `${job.job_title || "Gig"} saved to your tracker.`
+          ? TOAST_SUCCESS.GIG_MARKED_APPLIED(job.job_title || "Gig")
+          : TOAST_SUCCESS.GIG_SAVED_TO_TRACKER(job.job_title || "Gig")
       );
       const toastType = response.data?.alreadyTracked ? "info" : "success";
 
       setTrackingMessage(message);
-      showTrackerToast(message, toastType);
+      showToast({
+        type: toastType,
+        title: toastType === "info" ? TOAST_INFO.ALREADY_TRACKED_TITLE : TOAST_INFO.SAVED_TITLE,
+        message,
+        action: { label: "Open tracker", onClick: () => navigate("/job-application-status") },
+      });
       return true;
     } catch (requestError) {
       console.error(requestError);
-      const message = "GigWorld could not save this gig right now.";
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.GIG_TRACKER_SAVE_FAILED);
       setTrackingMessage(message);
-      showTrackerToast(message, "error");
+      showToast({ type: "error", message });
       return false;
     } finally {
       setSavingJobIds((current) => current.filter((jobId) => jobId !== job._id));
@@ -620,7 +619,7 @@ const WorkSearchPage = () => {
                 )}
               </div>
 
-              <div className="mt-5 grid gap-5">
+              <form onSubmit={handleFilterSubmit} className="mt-5 grid gap-5">
                 <label className="block">
                   <span className="text-xs font-bold uppercase text-slate-500">Search</span>
                   <input
@@ -632,7 +631,14 @@ const WorkSearchPage = () => {
                   />
                 </label>
 
-                <div className="relative">
+                <div
+                  className="relative"
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setIsSourceDropdownOpen(false);
+                    }
+                  }}
+                >
                   <p className="text-xs font-bold uppercase text-slate-500">Source websites</p>
                   <button
                     type="button"
@@ -844,7 +850,7 @@ const WorkSearchPage = () => {
                     </label>
                   </div>
                 </details>
-              </div>
+              </form>
 
               {activeFilterChips.length > 0 && (
                 <div className="mt-5 flex flex-wrap gap-2 border-t border-blue-100 pt-4">
@@ -1159,51 +1165,6 @@ const WorkSearchPage = () => {
           </div>
         </section>
       </main>
-
-      {trackingToasts.length > 0 && (
-        <div className="fixed right-5 top-24 z-50 grid w-[calc(100%-2.5rem)] max-w-sm gap-3">
-          {trackingToasts.map((toast) => (
-            <div
-              key={toast.id}
-              className={`rounded-lg border p-4 shadow-2xl backdrop-blur-xl ${
-                toast.type === "error"
-                  ? "border-red-200 bg-red-50/95 text-red-700 shadow-red-950/10"
-                  : toast.type === "info"
-                    ? "border-amber-200 bg-amber-50/95 text-amber-800 shadow-amber-950/10"
-                    : "border-blue-300 bg-white/95 text-blue-800 shadow-blue-950/15"
-              }`}
-              role="status"
-              aria-live="polite"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-black uppercase">
-                    {toast.type === "error" ? "Tracker issue" : toast.type === "info" ? "Already tracked" : "Saved"}
-                  </p>
-                  <p className="mt-1 text-sm font-bold leading-6">{toast.message}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => dismissTrackerToast(toast.id)}
-                  className="rounded-md px-2 py-1 text-sm font-black text-slate-400 transition hover:bg-white hover:text-slate-700"
-                  aria-label="Close tracker notification"
-                >
-                  x
-                </button>
-              </div>
-              {toast.type !== "error" && (
-                <button
-                  type="button"
-                  onClick={() => navigate("/job-application-status")}
-                  className="mt-3 text-sm font-black text-blue-700 underline underline-offset-4 transition hover:text-blue-900"
-                >
-                  Open tracker
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
 
       {trackingPromptJob && (
         <div className="fixed bottom-5 right-5 z-50 w-[calc(100%-2.5rem)] max-w-sm rounded-lg border border-blue-300/80 bg-white/75 p-5 shadow-2xl shadow-blue-950/20 backdrop-blur-xl ring-1 ring-white/70">

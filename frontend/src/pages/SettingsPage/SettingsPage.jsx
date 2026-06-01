@@ -4,6 +4,8 @@ import { Link, useNavigate } from "react-router-dom";
 import Footer from "../../components/Footer/Footer";
 import Navbar from "../../components/Navbar/Navbar";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const emptyUser = {
   fullName: "",
@@ -38,6 +40,7 @@ const getMessageClass = (message) =>
 
 const SettingsPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [user, setUser] = useState(emptyUser);
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
@@ -79,14 +82,16 @@ const SettingsPage = () => {
         localStorage.setItem("user", JSON.stringify(currentUser));
       } catch (error) {
         console.error("Unable to load settings:", error);
-        setMessage({ type: "error", text: error.response?.data?.message || "Settings could not be loaded." });
+        const text = getReadableErrorMessage(error, TOAST_FAILURE.SETTINGS_LOAD_FAILED);
+        setMessage({ type: "error", text });
+        showToast({ type: "error", message: text });
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSettings();
-  }, []);
+  }, [showToast]);
 
   const updatePasswordField = (field, value) => {
     setPasswordForm((current) => ({
@@ -100,7 +105,9 @@ const SettingsPage = () => {
     event.preventDefault();
 
     if (!passwordFormIsValid) {
-      setMessage({ type: "error", text: "Please complete the password fields and match all password rules." });
+      const text = TOAST_FAILURE.PASSWORD_FIELDS_INVALID;
+      setMessage({ type: "error", text });
+      showToast({ type: "error", message: text });
       return;
     }
 
@@ -125,10 +132,14 @@ const SettingsPage = () => {
         newPassword: "",
         confirmPassword: "",
       });
-      setMessage({ type: "success", text: response.data?.message || "Password changed successfully." });
+      const text = response.data?.message || TOAST_SUCCESS.PASSWORD_CHANGED;
+      setMessage({ type: "success", text });
+      showToast({ type: "success", message: text });
     } catch (error) {
       console.error("Unable to change password:", error);
-      setMessage({ type: "error", text: error.response?.data?.message || "Password could not be changed." });
+      const text = getReadableErrorMessage(error, TOAST_FAILURE.PASSWORD_CHANGE_FAILED);
+      setMessage({ type: "error", text });
+      showToast({ type: "error", message: text });
     } finally {
       setIsSavingPassword(false);
     }

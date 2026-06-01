@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import GoogleAuthButton from "../../components/Auth/GoogleAuthButton";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE } from "../../constants/toastMessages";
 
 const inputClass =
   "mt-2 block w-full rounded-md border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20";
@@ -37,6 +39,7 @@ const getSigninErrors = ({ email, password }) => ({
 
 const SigninPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -71,6 +74,7 @@ const SigninPage = () => {
         email: true,
         password: true,
       });
+      showToast({ type: "error", message: TOAST_FAILURE.SIGNIN_FORM_INVALID });
       return;
     }
 
@@ -91,7 +95,12 @@ const SigninPage = () => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        setError(data.message || "We couldn't sign you in. Check your email and password.");
+        const message = getReadableErrorMessage(
+          data.message,
+          TOAST_FAILURE.SIGNIN_FAILED,
+        );
+        setError(message);
+        showToast({ type: "error", message });
         return;
       }
 
@@ -105,11 +114,15 @@ const SigninPage = () => {
         const onboardingIsComplete = Boolean(data?.data?.user?.gigPreferences?.onboardingCompleted);
         navigate(onboardingIsComplete ? "/work" : "/gig-preferences");
       } else {
-        setError("Sign in succeeded, but no access token was returned.");
+        const message = TOAST_FAILURE.SIGNIN_TOKEN_MISSING;
+        setError(message);
+        showToast({ type: "error", message });
       }
     } catch (error) {
       console.log("An error occurred", error);
-      setError("The server could not be reached. Please try again in a moment.");
+      const message = TOAST_FAILURE.SERVER_UNREACHABLE;
+      setError(message);
+      showToast({ type: "error", message });
     } finally {
       setIsSubmitting(false);
     }

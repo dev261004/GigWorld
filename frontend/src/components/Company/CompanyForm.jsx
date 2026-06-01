@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCompanyById, registerCompany, updateCompany } from "./api.js";
+import { getReadableErrorMessage, useToast } from "../Toast/ToastProvider.jsx";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages.js";
 
 // eslint-disable-next-line react/prop-types
 const CompanyForm = ({ isEdit }) => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState({
     company_name: "",
     location: "",
@@ -19,15 +22,16 @@ const CompanyForm = ({ isEdit }) => {
     if (isEdit && id) {
       const fetchCompany = async () => {
         try {
-          const { data } = await getCompanyById(id);
-          setFormData(data.data); // Adjust based on your API response
-        } catch (error) {
-          console.error("Error fetching company:", error.message);
-        }
+        const { data } = await getCompanyById(id);
+        setFormData(data.data); // Adjust based on your API response
+      } catch (error) {
+        console.error("Error fetching company:", error.message);
+        showToast({ type: "error", message: getReadableErrorMessage(error, TOAST_FAILURE.COMPANY_FORM_LOAD_FAILED) });
+      }
       };
       fetchCompany();
     }
-  }, [isEdit, id]);
+  }, [isEdit, id, showToast]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -38,15 +42,15 @@ const CompanyForm = ({ isEdit }) => {
     try {
       if (isEdit) {
         await updateCompany(id, formData);
-        alert("Company updated successfully!");
+        showToast({ type: "success", message: TOAST_SUCCESS.COMPANY_UPDATED });
       } else {
         await registerCompany(formData);
-        alert("Company registered successfully!");
+        showToast({ type: "success", message: TOAST_SUCCESS.COMPANY_REGISTERED });
       }
       navigate("/companies");
     } catch (error) {
       console.error("Error submitting form:", error.message);
-      alert("Error submitting form.");
+      showToast({ type: "error", message: getReadableErrorMessage(error, TOAST_FAILURE.COMPANY_SAVE_FAILED) });
     }
   };
 

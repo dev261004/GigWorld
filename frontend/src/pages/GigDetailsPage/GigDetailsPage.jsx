@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_INFO, TOAST_SUCCESS } from "../../constants/toastMessages";
 import { parseGigBriefText } from "../../utils/gigBrief";
 
 const sourceCatalog = [
@@ -315,10 +317,10 @@ const GigDetailsSkeleton = () => (
 const GigDetailsPage = () => {
   const navigate = useNavigate();
   const { jobId } = useParams();
+  const { showToast } = useToast();
   const [job, setJob] = useState(null);
   const [tracker, setTracker] = useState(null);
   const [trackerMessage, setTrackerMessage] = useState("");
-  const [trackerToast, setTrackerToast] = useState(null);
   const [showTrackingPrompt, setShowTrackingPrompt] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -334,11 +336,13 @@ const GigDetailsPage = () => {
         setJob(response.data?.data || null);
       } catch (requestError) {
         console.error(requestError);
-        setError(
+        const readableMessage =
           requestError.response?.status === 410
             ? requestError.response.data?.message || "This gig is no longer available."
-            : "Unable to load this gig right now.",
-        );
+            : getReadableErrorMessage(requestError, TOAST_FAILURE.GIG_DETAILS_LOAD_FAILED);
+
+        setError(readableMessage);
+        showToast({ type: "error", message: readableMessage });
       } finally {
         const elapsedTime = Date.now() - loadStartedAt;
         const remainingDelay = Math.max(minimumDetailShimmerMs - elapsedTime, 0);
@@ -354,7 +358,7 @@ const GigDetailsPage = () => {
     };
 
     fetchGig();
-  }, [jobId]);
+  }, [jobId, showToast]);
 
   useEffect(() => {
     const fetchTracker = async () => {
@@ -379,29 +383,17 @@ const GigDetailsPage = () => {
     fetchTracker();
   }, [jobId]);
 
-  useEffect(() => {
-    if (!trackerToast) {
-      return undefined;
-    }
-
-    const toastTimer = window.setTimeout(() => {
-      setTrackerToast(null);
-    }, 3600);
-
-    return () => window.clearTimeout(toastTimer);
-  }, [trackerToast]);
-
-  const showTrackerToast = (message, type = "success") => {
-    setTrackerToast({ message, type });
-  };
-
   const trackGig = async (status = "Viewed source", sourceOpened = false) => {
     const token = localStorage.getItem("authToken");
 
     if (!token) {
-      const message = "Sign in to track this gig.";
+      const message = TOAST_FAILURE.SIGNIN_TO_TRACK_DETAILS;
       setTrackerMessage(message);
-      showTrackerToast(message, "error");
+      showToast({
+        type: "error",
+        message,
+        action: { label: "Sign in", onClick: () => navigate("/signin") },
+      });
       return;
     }
 
@@ -425,18 +417,23 @@ const GigDetailsPage = () => {
       setTracker(response.data?.data || null);
       const message = response.data?.message || (
         status === "Applied"
-          ? "Gig marked as applied in your tracker."
-          : "Gig saved to your application tracker."
+          ? TOAST_SUCCESS.GIG_MARKED_APPLIED()
+          : TOAST_SUCCESS.GIG_SAVED_TO_TRACKER()
       );
       const toastType = response.data?.alreadyTracked ? "info" : "success";
 
       setTrackerMessage(message);
-      showTrackerToast(message, toastType);
+      showToast({
+        type: toastType,
+        title: toastType === "info" ? TOAST_INFO.ALREADY_TRACKED_TITLE : TOAST_INFO.TRACKER_UPDATED_TITLE,
+        message,
+        action: { label: "Open tracker", onClick: () => navigate("/job-application-status") },
+      });
     } catch (requestError) {
       console.error(requestError);
-      const message = "Unable to update your tracker right now.";
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.TRACKER_UPDATE_FAILED_DETAILS);
       setTrackerMessage(message);
-      showTrackerToast(message, "error");
+      showToast({ type: "error", message });
     }
   };
 
@@ -680,41 +677,6 @@ const GigDetailsPage = () => {
           </>
         )}
       </main>
-
-      {trackerToast && (
-        <div
-          className={`fixed right-5 top-24 z-50 max-w-sm rounded-lg border px-4 py-3 text-sm font-black shadow-2xl backdrop-blur-xl ${
-            trackerToast.type === "error"
-              ? "border-red-200 bg-red-50/95 text-red-700 shadow-red-950/10"
-              : trackerToast.type === "info"
-                ? "border-amber-200 bg-amber-50/95 text-amber-800 shadow-amber-950/10"
-                : "border-blue-300 bg-white/95 text-blue-800 shadow-blue-950/15"
-          }`}
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex items-center gap-3">
-            <span
-              className={`h-2.5 w-2.5 shrink-0 rounded-full ${
-                trackerToast.type === "error"
-                  ? "bg-red-500"
-                  : trackerToast.type === "info"
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
-              }`}
-            />
-            <span>{trackerToast.message}</span>
-            <button
-              type="button"
-              onClick={() => setTrackerToast(null)}
-              className="ml-2 rounded-md px-1.5 text-sm font-black text-slate-400 transition hover:bg-white hover:text-slate-700"
-              aria-label="Close tracker notification"
-            >
-              x
-            </button>
-          </div>
-        </div>
-      )}
 
       {showTrackingPrompt && job && (
         <div className="fixed bottom-5 right-5 z-50 w-[calc(100%-2.5rem)] max-w-sm rounded-lg border border-blue-300/80 bg-white/75 p-5 shadow-2xl shadow-blue-950/20 backdrop-blur-xl ring-1 ring-white/70">

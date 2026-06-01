@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
 import { EyeIcon, EyeOffIcon } from "../../components/Icons/PasswordIcons";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const inputClass =
   "mt-2 block w-full rounded-md border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20";
@@ -50,6 +52,7 @@ const getResetErrors = ({ newPassword, confirmPassword }) => {
 const ResetPasswordPage = () => {
   const { token } = useParams();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -82,9 +85,11 @@ const ResetPasswordPage = () => {
 
     const verifyResetLink = async () => {
       if (!token) {
+        const text = TOAST_FAILURE.RESET_LINK_INVALID;
         setTokenStatus("invalid");
-        setMessage("This password reset link is invalid. Please request a new link.");
+        setMessage(text);
         setMessageType("error");
+        showToast({ type: "error", message: text });
         return;
       }
 
@@ -106,16 +111,23 @@ const ResetPasswordPage = () => {
         }
 
         setTokenStatus(response.status === 410 ? "expired" : "invalid");
-        setMessage(data.message || "This password reset link is invalid or expired. Please request a new link.");
+        const text = getReadableErrorMessage(
+          data.message,
+          TOAST_FAILURE.RESET_LINK_INVALID_OR_EXPIRED,
+        );
+        setMessage(text);
         setMessageType("error");
+        showToast({ type: "error", message: text });
       } catch (error) {
         console.error("Could not verify reset link:", error);
         if (!isMounted) {
           return;
         }
         setTokenStatus("error");
-        setMessage("The server could not verify this reset link. Please try again in a moment.");
+        const text = TOAST_FAILURE.RESET_LINK_VERIFY_FAILED;
+        setMessage(text);
         setMessageType("error");
+        showToast({ type: "error", message: text });
       }
     };
 
@@ -124,7 +136,7 @@ const ResetPasswordPage = () => {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [showToast, token]);
 
   const markTouched = (field) => {
     setTouched((current) => ({
@@ -142,12 +154,13 @@ const ResetPasswordPage = () => {
     setMessageType("info");
 
     if (!canUseResetLink) {
-      setMessage(
+      const text =
         tokenStatus === "expired"
-          ? "This password reset link has expired. Please request a new link."
-          : "This password reset link is invalid. Please request a new link."
-      );
+          ? TOAST_FAILURE.RESET_LINK_EXPIRED
+          : TOAST_FAILURE.RESET_LINK_INVALID;
+      setMessage(text);
       setMessageType("error");
+      showToast({ type: "error", message: text });
       return;
     }
 
@@ -156,6 +169,7 @@ const ResetPasswordPage = () => {
         newPassword: true,
         confirmPassword: true,
       });
+      showToast({ type: "error", message: TOAST_FAILURE.PASSWORD_FIELDS_INVALID });
       return;
     }
 
@@ -171,8 +185,10 @@ const ResetPasswordPage = () => {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        setMessage("Password reset successfully. Redirecting to sign in...");
+        const text = TOAST_SUCCESS.PASSWORD_RESET;
+        setMessage(text);
         setMessageType("success");
+        showToast({ type: "success", message: text });
         setTimeout(() => navigate("/signin"), 3000);
       } else {
         if (response.status === 410) {
@@ -180,13 +196,20 @@ const ResetPasswordPage = () => {
         } else if (response.status === 400) {
           setTokenStatus("invalid");
         }
-        setMessage(data.message || "Failed to reset password. The link may be expired or invalid.");
+        const text = getReadableErrorMessage(
+          data.message,
+          TOAST_FAILURE.RESET_PASSWORD_FAILED,
+        );
+        setMessage(text);
         setMessageType("error");
+        showToast({ type: "error", message: text });
       }
     } catch (error) {
       console.error("An error occurred:", error);
-      setMessage("The server could not be reached. Please try again in a moment.");
+      const text = TOAST_FAILURE.SERVER_UNREACHABLE;
+      setMessage(text);
       setMessageType("error");
+      showToast({ type: "error", message: text });
     } finally {
       setLoading(false);
     }

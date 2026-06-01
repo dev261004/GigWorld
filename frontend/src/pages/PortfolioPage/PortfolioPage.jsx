@@ -5,6 +5,8 @@ import { Link } from "react-router-dom";
 import CalendarInput from "../../components/CalendarInput/CalendarInput";
 import Footer from "../../components/Footer/Footer";
 import Navbar from "../../components/Navbar/Navbar";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const API_BASE_URL = "http://localhost:2610";
 
@@ -477,6 +479,7 @@ const PortfolioPageShimmer = () => (
 );
 
 const PortfolioPage = () => {
+  const { showToast: pushToast } = useToast();
   const [user, setUser] = useState(null);
   const [portfolio, setPortfolio] = useState({
     bio: "",
@@ -495,7 +498,6 @@ const PortfolioPage = () => {
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [isGeneratingResume, setIsGeneratingResume] = useState(false);
-  const [toast, setToast] = useState("");
   const [error, setError] = useState("");
   const [draftUserId, setDraftUserId] = useState("");
   const [isDraftReady, setIsDraftReady] = useState(false);
@@ -512,10 +514,9 @@ const PortfolioPage = () => {
   const educationText = useMemo(() => buildEducationText(portfolio), [portfolio]);
   const workExperienceText = useMemo(() => buildWorkExperienceText(portfolio), [portfolio]);
 
-  const showToast = useCallback((message) => {
-    setToast(message);
-    window.setTimeout(() => setToast(""), 2400);
-  }, []);
+  const showSuccessToast = useCallback((message) => {
+    pushToast({ type: "success", message });
+  }, [pushToast]);
 
   const fetchPortfolio = useCallback(async ({ showLoading = true } = {}) => {
     if (showLoading) {
@@ -525,7 +526,9 @@ const PortfolioPage = () => {
     const token = localStorage.getItem("authToken");
 
     if (!token) {
-      setError("Please sign in to load your portfolio.");
+      const message = TOAST_FAILURE.SIGNIN_TO_LOAD_PORTFOLIO;
+      setError(message);
+      pushToast({ type: "error", message });
       if (showLoading) {
         setIsLoading(false);
       }
@@ -552,22 +555,24 @@ const PortfolioPage = () => {
       setIsDraftReady(true);
       setProjects(nextPortfolio.projects || []);
       if (savedDraft?.portfolio || !isProjectFormEmpty(draftProjectForm, draftEditingProjectId)) {
-        showToast("Unsaved portfolio draft restored.");
+        showSuccessToast(TOAST_SUCCESS.PORTFOLIO_DRAFT_RESTORED);
       }
     } catch (requestError) {
       console.error("Error fetching portfolio:", requestError);
-      setError(
+      const message =
         requestError.response?.status === 401
-          ? "Your session expired. Please sign in again to load your portfolio."
-          : requestError.response?.data?.message || "Portfolio could not be loaded right now.",
-      );
+          ? TOAST_FAILURE.SESSION_EXPIRED_PORTFOLIO
+          : getReadableErrorMessage(requestError, TOAST_FAILURE.PORTFOLIO_LOAD_FAILED);
+
+      setError(message);
+      pushToast({ type: "error", message });
       setIsDraftReady(true);
     } finally {
       if (showLoading) {
         setIsLoading(false);
       }
     }
-  }, [showToast]);
+  }, [pushToast, showSuccessToast]);
 
   useEffect(() => {
     fetchPortfolio();
@@ -709,7 +714,9 @@ const PortfolioPage = () => {
     const linkError = getFirstLinkError(portfolio.links);
 
     if (linkError) {
-      setError(`${linkError}. Example: https://example.com`);
+      const message = TOAST_FAILURE.PORTFOLIO_LINK_INVALID(linkError);
+      setError(message);
+      pushToast({ type: "error", message });
       return;
     }
 
@@ -733,10 +740,12 @@ const PortfolioPage = () => {
       setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
       setHasPortfolioDraft(false);
-      showToast("Portfolio details saved.");
+      showSuccessToast(TOAST_SUCCESS.PORTFOLIO_SAVED);
     } catch (requestError) {
       console.error("Error saving portfolio:", requestError);
-      setError(requestError.response?.data?.message || "Portfolio details could not be saved.");
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.PORTFOLIO_SAVE_FAILED);
+      setError(message);
+      pushToast({ type: "error", message });
     } finally {
       setIsSavingPortfolio(false);
     }
@@ -767,7 +776,7 @@ const PortfolioPage = () => {
             current.map((project) => (project._id === updatedProject._id ? updatedProject : project)),
           );
         }
-        showToast("Project updated.");
+        showSuccessToast(TOAST_SUCCESS.PROJECT_UPDATED);
       } else {
         const response = await axios.post(`${API_BASE_URL}/api/v1/projects/create`, payload, {
           headers: getAuthHeaders(),
@@ -777,7 +786,7 @@ const PortfolioPage = () => {
         if (createdProject) {
           setProjects((current) => [createdProject, ...current]);
         }
-        showToast("Project added.");
+        showSuccessToast(TOAST_SUCCESS.PROJECT_ADDED);
       }
 
       setProjectForm(emptyProjectForm);
@@ -785,7 +794,9 @@ const PortfolioPage = () => {
       setHasProjectDraft(false);
     } catch (requestError) {
       console.error("Error saving project:", requestError);
-      setError("Project could not be saved.");
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.PROJECT_SAVE_FAILED);
+      setError(message);
+      pushToast({ type: "error", message });
     } finally {
       setIsSavingProject(false);
     }
@@ -809,11 +820,13 @@ const PortfolioPage = () => {
       await axios.delete(`${API_BASE_URL}/api/v1/projects/${projectId}`, {
         headers: getAuthHeaders(),
       });
-      showToast("Project deleted.");
+      showSuccessToast(TOAST_SUCCESS.PROJECT_DELETED);
       setProjects((current) => current.filter((project) => project._id !== projectId));
     } catch (requestError) {
       console.error("Error deleting project:", requestError);
-      setError("Project could not be deleted.");
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.PROJECT_DELETE_FAILED);
+      setError(message);
+      pushToast({ type: "error", message });
     }
   };
 
@@ -821,7 +834,9 @@ const PortfolioPage = () => {
     event.preventDefault();
 
     if (!resumeFile) {
-      setError("Choose a PDF, DOC, or DOCX resume first.");
+      const message = TOAST_FAILURE.RESUME_FILE_REQUIRED;
+      setError(message);
+      pushToast({ type: "error", message });
       return;
     }
 
@@ -843,10 +858,12 @@ const PortfolioPage = () => {
       setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
       setResumeFile(null);
-      showToast("Resume uploaded.");
+      showSuccessToast(TOAST_SUCCESS.RESUME_UPLOADED);
     } catch (requestError) {
       console.error("Error uploading resume:", requestError);
-      setError(requestError.response?.data?.message || "Resume could not be uploaded.");
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.RESUME_UPLOAD_FAILED);
+      setError(message);
+      pushToast({ type: "error", message });
     } finally {
       setIsUploadingResume(false);
     }
@@ -864,10 +881,12 @@ const PortfolioPage = () => {
 
       setPortfolio(normalizePortfolio(nextPortfolio));
       setProjects(nextPortfolio.projects || []);
-      showToast("Resume generated.");
+      showSuccessToast(TOAST_SUCCESS.RESUME_GENERATED);
     } catch (requestError) {
       console.error("Error generating resume:", requestError);
-      setError(requestError.response?.data?.message || "Resume generation is not available right now.");
+      const message = getReadableErrorMessage(requestError, TOAST_FAILURE.RESUME_GENERATE_FAILED);
+      setError(message);
+      pushToast({ type: "error", message });
     } finally {
       setIsGeneratingResume(false);
     }
@@ -876,10 +895,12 @@ const PortfolioPage = () => {
   const copyToClipboard = async (label, value) => {
     try {
       await navigator.clipboard.writeText(value || "");
-      showToast(`${label} copied.`);
+      showSuccessToast(TOAST_SUCCESS.COPIED(label));
     } catch (copyError) {
       console.error("Copy failed:", copyError);
-      setError(`${label} could not be copied.`);
+      const message = TOAST_FAILURE.COPY_FAILED(label);
+      setError(message);
+      pushToast({ type: "error", message });
     }
   };
 
@@ -890,12 +911,6 @@ const PortfolioPage = () => {
   return (
     <div className="min-h-screen bg-[#f7fafc] text-slate-950">
       <Navbar />
-
-      {toast && (
-        <div className="fixed right-5 top-24 z-[60] rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700 shadow-xl shadow-emerald-950/10">
-          {toast}
-        </div>
-      )}
 
       <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         <section className="rounded-lg border border-blue-400 bg-gradient-to-r from-slate-950 via-blue-950 to-slate-900 p-6 text-white shadow-xl shadow-blue-950/20 sm:p-8">

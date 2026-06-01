@@ -21,11 +21,13 @@ import ProjectPage from "./pages/ProjectPage/ProjectPage"
 import PortfolioPage from "./pages/PortfolioPage/PortfolioPage"
 import CompanyForm from "./components/Company/CompanyForm"
 import CompanyList from "./components/Company/CompanyList"
+import { ToastProvider } from "./components/Toast/ToastProvider"
 
 function App() {
 
   return (
     <div>
+    <ToastProvider>
     <BrowserRouter>
     <Routes>
     <Route path="/" element={<Homepage />} />
@@ -56,6 +58,7 @@ function App() {
 
     </Routes>
     </BrowserRouter>
+    </ToastProvider>
     </div>
   )
 }

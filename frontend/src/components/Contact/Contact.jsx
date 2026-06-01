@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { useToast } from "../Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const contactMethods = [
   {
@@ -24,6 +26,7 @@ const initialFormData = {
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 const Contact = () => {
+  const { showToast } = useToast();
   const [formData, setFormData] = useState(initialFormData);
   const [touched, setTouched] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,6 +78,7 @@ const Contact = () => {
     setTouched({ name: true, email: true, question: true });
 
     if (!isFormValid) {
+      showToast({ type: "error", message: TOAST_FAILURE.CONTACT_FORM_INVALID });
       return;
     }
 
@@ -101,11 +105,13 @@ const Contact = () => {
       setFormData(initialFormData);
       setTouched({});
       setStatusType("success");
-      setStatusMessage("Message sent. The GigWorld team will get back to you soon.");
+      setStatusMessage(TOAST_SUCCESS.CONTACT_SENT);
+      showToast({ type: "success", message: TOAST_SUCCESS.CONTACT_SENT });
     } catch (error) {
       console.error(error);
       setStatusType("error");
-      setStatusMessage("Unable to send your message right now. Please try again.");
+      setStatusMessage(TOAST_FAILURE.CONTACT_SEND_FAILED);
+      showToast({ type: "error", message: TOAST_FAILURE.CONTACT_SEND_FAILED });
     } finally {
       setIsSubmitting(false);
     }

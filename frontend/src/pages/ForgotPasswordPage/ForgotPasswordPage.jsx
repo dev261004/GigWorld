@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const inputClass =
   "mt-2 block w-full rounded-md border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500";
@@ -33,6 +35,7 @@ const getEmailError = (email) => {
 const ForgotPasswordPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { showToast } = useToast();
   const queryEmail = new URLSearchParams(location.search).get("email") || "";
   const incomingEmail = normalizeEmail(location.state?.email || queryEmail);
   const emailIsLocked = Boolean(incomingEmail && isValidEmail(incomingEmail));
@@ -53,6 +56,7 @@ const ForgotPasswordPage = () => {
 
     if (!isFormValid) {
       setTouched(true);
+      showToast({ type: "error", message: TOAST_FAILURE.EMAIL_INVALID });
       return;
     }
 
@@ -68,19 +72,27 @@ const ForgotPasswordPage = () => {
       const data = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        setMessage("Password reset link sent successfully. Please check your email.");
+        const text = TOAST_SUCCESS.PASSWORD_RESET_LINK_SENT;
+        setMessage(text);
         setMessageType("success");
+        showToast({ type: "success", message: text });
         setTimeout(() => navigate("/signin"), 3000);
       } else if (response.status === 404) {
-        setMessage("No GigWorld account was found with this email.");
+        const text = TOAST_FAILURE.PASSWORD_RESET_ACCOUNT_NOT_FOUND;
+        setMessage(text);
         setMessageType("error");
+        showToast({ type: "error", message: text });
       } else {
-        setMessage(data.message || "Failed to send password reset link. Please try again.");
+        const text = getReadableErrorMessage(data.message, TOAST_FAILURE.RESET_SEND_FAILED);
+        setMessage(text);
         setMessageType("error");
+        showToast({ type: "error", message: text });
       }
     } catch (error) {
-      setMessage("The server could not be reached. Please try again in a moment.");
+      const text = TOAST_FAILURE.SERVER_UNREACHABLE;
+      setMessage(text);
       setMessageType("error");
+      showToast({ type: "error", message: text });
       console.error("An error occurred", error);
     } finally {
       setLoading(false);

@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import BrandLogo from "../../components/BrandLogo/BrandLogo";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE } from "../../constants/toastMessages";
 
 const GoogleAuthCallbackPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -14,12 +17,16 @@ const GoogleAuthCallbackPage = () => {
       const refreshToken = params.get("refreshToken");
 
       if (authError) {
-        setError(authError);
+        const message = TOAST_FAILURE.GOOGLE_AUTH_FAILED;
+        setError(message);
+        showToast({ type: "error", message });
         return;
       }
 
       if (!accessToken) {
-        setError("Google sign in did not return an access token.");
+        const message = TOAST_FAILURE.GOOGLE_ACCESS_TOKEN_MISSING;
+        setError(message);
+        showToast({ type: "error", message });
         return;
       }
 
@@ -38,7 +45,12 @@ const GoogleAuthCallbackPage = () => {
         const data = await response.json().catch(() => ({}));
 
         if (!response.ok || !data?.data) {
-          setError(data.message || "Google sign in completed, but your profile could not be loaded.");
+          const message = getReadableErrorMessage(
+            data.message,
+            TOAST_FAILURE.GOOGLE_PROFILE_LOAD_FAILED,
+          );
+          setError(message);
+          showToast({ type: "error", message });
           return;
         }
 
@@ -46,12 +58,14 @@ const GoogleAuthCallbackPage = () => {
         navigate(data.data?.gigPreferences?.onboardingCompleted ? "/work" : "/gig-preferences", { replace: true });
       } catch (requestError) {
         console.error("Google auth profile load failed:", requestError);
-        setError("Google sign in completed, but the server could not load your profile.");
+        const message = TOAST_FAILURE.GOOGLE_SERVER_PROFILE_LOAD_FAILED;
+        setError(message);
+        showToast({ type: "error", message });
       }
     };
 
     finishGoogleAuth();
-  }, [navigate]);
+  }, [navigate, showToast]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f7fafc] px-4 text-slate-950">

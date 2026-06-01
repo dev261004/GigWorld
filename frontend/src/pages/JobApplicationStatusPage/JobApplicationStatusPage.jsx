@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
 import CalendarInput from "../../components/CalendarInput/CalendarInput";
+import { getReadableErrorMessage, useToast } from "../../components/Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const fallbackStatuses = [
   "Viewed source",
@@ -134,6 +136,7 @@ const getPaginationItems = (currentPage, totalPages) => {
 
 const JobApplicationStatusPage = () => {
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [applications, setApplications] = useState([]);
   const [statusOptions, setStatusOptions] = useState(fallbackStatuses);
   const [sourceOptions, setSourceOptions] = useState([]);
@@ -197,11 +200,13 @@ const JobApplicationStatusPage = () => {
       );
     } catch (error) {
       console.error("Failed to fetch tracked gigs:", error);
-      setMessage("Unable to load your tracker right now.");
+      const readableMessage = getReadableErrorMessage(error, TOAST_FAILURE.TRACKER_LOAD_FAILED);
+      setMessage(readableMessage);
+      showToast({ type: "error", message: readableMessage });
     } finally {
       setLoading(false);
     }
-  }, [currentPage, navigate, reminderFilter, sourceFilter, statusFilter, trackerSearch]);
+  }, [currentPage, navigate, reminderFilter, showToast, sourceFilter, statusFilter, trackerSearch]);
 
   useEffect(() => {
     fetchApplications();
@@ -246,10 +251,14 @@ const JobApplicationStatusPage = () => {
         current.map((tracker) => (tracker._id === trackerId ? response.data.data : tracker)),
       );
       await fetchApplications({ clearMessage: false });
-      setMessage("Tracker updated.");
+      const message = TOAST_SUCCESS.TRACKER_UPDATED;
+      setMessage(message);
+      showToast({ type: "success", message });
     } catch (error) {
       console.error("Failed to update tracked gig:", error);
-      setMessage("Unable to update this tracked gig.");
+      const message = getReadableErrorMessage(error, TOAST_FAILURE.TRACKER_UPDATE_FAILED);
+      setMessage(message);
+      showToast({ type: "error", message });
     }
   };
 
@@ -268,10 +277,14 @@ const JobApplicationStatusPage = () => {
       });
       setApplications((current) => current.filter((tracker) => tracker._id !== trackerId));
       await fetchApplications({ clearMessage: false });
-      setMessage("Tracked gig removed.");
+      const message = TOAST_SUCCESS.TRACKER_REMOVED;
+      setMessage(message);
+      showToast({ type: "success", message });
     } catch (error) {
       console.error("Failed to remove tracked gig:", error);
-      setMessage("Unable to remove this tracked gig.");
+      const message = getReadableErrorMessage(error, TOAST_FAILURE.TRACKER_REMOVE_FAILED);
+      setMessage(message);
+      showToast({ type: "error", message });
     }
   };
 
@@ -286,6 +299,12 @@ const JobApplicationStatusPage = () => {
     setStatusFilter("");
     setSourceFilter("");
     setReminderFilter("all");
+    setIsSourceFilterOpen(false);
+    setCurrentPage(1);
+  };
+
+  const handleTrackerFilterSubmit = (event) => {
+    event.preventDefault();
     setIsSourceFilterOpen(false);
     setCurrentPage(1);
   };
@@ -363,7 +382,7 @@ const JobApplicationStatusPage = () => {
                 </p>
               </div>
 
-              <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
+              <form onSubmit={handleTrackerFilterSubmit} className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_repeat(3,minmax(0,1fr))]">
                 <label className="block">
                   <span className="text-xs font-bold uppercase text-slate-500">Search</span>
                   <input
@@ -395,7 +414,14 @@ const JobApplicationStatusPage = () => {
                   </select>
                 </label>
 
-                <div className="relative">
+                <div
+                  className="relative"
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") {
+                      setIsSourceFilterOpen(false);
+                    }
+                  }}
+                >
                   <span className="text-xs font-bold uppercase text-slate-500">Source</span>
                   <button
                     type="button"
@@ -466,7 +492,7 @@ const JobApplicationStatusPage = () => {
                     ))}
                   </select>
                 </label>
-              </div>
+              </form>
 
               {hasTrackerFilters && (
                 <button

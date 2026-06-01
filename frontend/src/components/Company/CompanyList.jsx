@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { getCompanies, deleteCompany } from "./api";
+import { getReadableErrorMessage, useToast } from "../Toast/ToastProvider";
+import { TOAST_FAILURE, TOAST_SUCCESS } from "../../constants/toastMessages";
 
 const CompanyList = () => {
+  const { showToast } = useToast();
   const [companies, setCompanies] = useState([]);
 
   useEffect(() => {
@@ -12,20 +15,21 @@ const CompanyList = () => {
         setCompanies(data.data); // Adjust based on your API response structure
       } catch (error) {
         console.error("Error fetching companies:", error.message);
+        showToast({ type: "error", message: getReadableErrorMessage(error, TOAST_FAILURE.COMPANY_LIST_LOAD_FAILED) });
       }
     };
     fetchCompanies();
-  }, []);
+  }, [showToast]);
 
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this company?")) {
       try {
         await deleteCompany(id);
         setCompanies(companies.filter((company) => company._id !== id));
-        alert("Company deleted successfully!");
+        showToast({ type: "success", message: TOAST_SUCCESS.COMPANY_DELETED });
       } catch (error) {
         console.error("Error deleting company:", error.message);
-        alert("Error deleting company.");
+        showToast({ type: "error", message: getReadableErrorMessage(error, TOAST_FAILURE.COMPANY_DELETE_FAILED) });
       }
     }
   };
