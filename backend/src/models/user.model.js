@@ -84,6 +84,10 @@ const userSchema = new Schema(
                 type: [String],
                 default: []
             },
+            preferredSources: {
+                type: [String],
+                default: []
+            },
             education: {
                 type: String,
                 trim: true,

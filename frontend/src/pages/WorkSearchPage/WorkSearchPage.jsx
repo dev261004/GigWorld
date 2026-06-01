@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
+import { getGigBriefPreview } from "../../utils/gigBrief";
 
 const jobsPerPage = 10;
 
@@ -76,6 +77,7 @@ const sortOptions = [
 ];
 
 const fallbackProjectStatuses = ["Open", "Urgent", "Actively Hiring", "Long Term", "Short Term"];
+const preferenceNoticeStorageKey = "gigworld:preference-notice-dismissed";
 
 const SaveIcon = () => (
   <svg
@@ -91,6 +93,22 @@ const SaveIcon = () => (
 );
 
 const getTechStack = (job) => (Array.isArray(job?.tech_stack) ? job.tech_stack : []);
+
+const getPreferenceTagClass = (tag) => {
+  if (tag === "Your profile matches") {
+    return "recommended-pill-motion border-transparent bg-emerald-50 text-emerald-700";
+  }
+
+  if (tag === "Recommended for you") {
+    return "border-blue-200 bg-blue-50 text-blue-700";
+  }
+
+  if (tag === "Skill match" || tag === "Category match" || tag === "Work type match") {
+    return "border-blue-200 bg-blue-50 text-blue-700";
+  }
+
+  return "border-blue-200 bg-blue-50 text-blue-700";
+};
 
 const formatDate = (value) => {
   if (!value) {
@@ -271,6 +289,10 @@ const WorkSearchPage = () => {
   const [trackingPromptJob, setTrackingPromptJob] = useState(null);
   const [trackingToasts, setTrackingToasts] = useState([]);
   const [savingJobIds, setSavingJobIds] = useState([]);
+  const [preferencesIncomplete, setPreferencesIncomplete] = useState(false);
+  const [isPreferenceNoticeDismissed, setIsPreferenceNoticeDismissed] = useState(
+    () => localStorage.getItem(preferenceNoticeStorageKey) === "true",
+  );
   const toastTimersRef = useRef([]);
 
   useEffect(() => {
@@ -299,17 +321,29 @@ const WorkSearchPage = () => {
       setError("");
 
       try {
-        const res = await axios.post("http://localhost:2610/api/v1/jobs/", {
-          searchKeyword,
-          filters,
-          sortBy,
-          page: currentPage,
-          perPage: jobsPerPage,
-        });
+        const token = localStorage.getItem("authToken");
+        const res = await axios.post(
+          "http://localhost:2610/api/v1/jobs/",
+          {
+            searchKeyword,
+            filters,
+            sortBy,
+            page: currentPage,
+            perPage: jobsPerPage,
+          },
+          token
+            ? {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              }
+            : undefined,
+        );
 
         const nextJobs = res.data?.data || [];
         setJobs(nextJobs);
         setTotalJobs(res.data?.totalJobs || nextJobs.length);
+        setPreferencesIncomplete(Boolean(res.data?.preferencesIncomplete));
       } catch (requestError) {
         console.error(requestError);
         setError("Unable to load gigs right now. Please try again in a moment.");
@@ -386,6 +420,11 @@ const WorkSearchPage = () => {
     setFilters(emptyFilters);
     setSearchKeyword("");
     setCurrentPage(1);
+  };
+
+  const dismissPreferenceNotice = () => {
+    localStorage.setItem(preferenceNoticeStorageKey, "true");
+    setIsPreferenceNoticeDismissed(true);
   };
 
   const showTrackerToast = (message, type = "success") => {
@@ -885,6 +924,28 @@ const WorkSearchPage = () => {
               </div>
             )}
 
+            {preferencesIncomplete && !isPreferenceNoticeDismissed && (
+              <div className="mb-4 flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 sm:flex-row sm:items-center sm:justify-between">
+                <span>Complete your gig preferences to get better recommendations.</span>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/gig-preferences")}
+                    className="text-left text-emerald-800 underline underline-offset-4 hover:text-emerald-950"
+                  >
+                    Complete preferences
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissPreferenceNotice}
+                    className="text-left text-slate-600 underline underline-offset-4 hover:text-slate-900"
+                  >
+                    Not now
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
               {isLoading && (
                 <>
@@ -920,6 +981,12 @@ const WorkSearchPage = () => {
                 const techStack = getTechStack(job);
                 const source = getSourceMeta(job.source_website);
                 const isSavingGig = savingJobIds.includes(job._id);
+                const preferenceTags = Array.isArray(job.preferenceTags) ? job.preferenceTags : [];
+                const primaryPreferenceTags = preferenceTags.filter((tag) =>
+                  ["Your profile matches", "Recommended for you", "Skill match", "Category match"].includes(tag)
+                );
+                const secondaryPreferenceTags = preferenceTags.filter((tag) => !primaryPreferenceTags.includes(tag));
+                const briefPreview = getGigBriefPreview(job.min_requirements);
 
                 return (
                   <article
@@ -927,7 +994,7 @@ const WorkSearchPage = () => {
                     className="rounded-lg border border-blue-300 bg-white p-5 shadow-sm ring-1 ring-blue-100/80 transition hover:-translate-y-0.5 hover:border-blue-500 hover:shadow-xl hover:shadow-blue-100/80"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           {job.is_new && (
                             <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
@@ -938,7 +1005,27 @@ const WorkSearchPage = () => {
                             <img src={source.logo} alt={`${source.name} logo`} className="h-4 w-4 rounded-sm" />
                             {source.name}
                           </span>
+                          {primaryPreferenceTags.map((tag) => (
+                            <span
+                              key={tag}
+                              className={`rounded-full border px-3 py-1 text-xs font-black ${getPreferenceTagClass(tag)}`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
                         </div>
+                        {secondaryPreferenceTags.length > 0 && (
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            {secondaryPreferenceTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className={`rounded-full border px-3 py-1 text-xs font-black ${getPreferenceTagClass(tag)}`}
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <h2 className="mt-3 text-xl font-black leading-snug text-slate-950">
                           {job.job_title}
                         </h2>
@@ -946,7 +1033,7 @@ const WorkSearchPage = () => {
                           {job.company_name || "Client listed on source platform"}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 text-left sm:justify-end sm:text-right">
+                      <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-left sm:min-w-[170px] sm:justify-end sm:text-right">
                         <span className="text-xs font-black uppercase tracking-wide text-blue-700">Budget</span>
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                         <span className="text-base font-black text-slate-950">{formatBudget(job)}</span>
@@ -990,7 +1077,7 @@ const WorkSearchPage = () => {
 
                     <div className="mt-5 flex flex-col gap-3 border-t border-blue-300 pt-4 sm:flex-row sm:items-center sm:justify-between">
                       <p className="line-clamp-2 text-sm leading-6 text-slate-500">
-                        {job.min_requirements || "Review the gig details and apply when it matches your skills."}
+                        {briefPreview || "Review the gig details and apply when it matches your skills."}
                       </p>
                       <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                         <button

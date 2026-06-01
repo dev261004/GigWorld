@@ -1,4 +1,6 @@
+import jwt from "jsonwebtoken";
 import {Job} from "../models/jobs.model.js";
+import { User } from "../models/user.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import {ApiError} from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -43,6 +45,13 @@ const budgetRanges = {
   "5000+": { min: 5000 },
 };
 
+const preferenceBudgetRanges = {
+  "Under $100": { max: 100 },
+  "$100 - $500": { min: 100, max: 500 },
+  "$500 - $1000": { min: 500, max: 1000 },
+  "$1000+": { min: 1000 },
+};
+
 const postedWithinDays = {
   "24h": 1,
   "3d": 3,
@@ -66,6 +75,18 @@ const experiencePatterns = {
   expert: ["expert", "advanced", "senior"],
 };
 
+const categoryKeywords = {
+  tech: ["react", "node", "javascript", "python", "mern", "frontend", "backend", "developer", "software", "web", "app", "api", "database"],
+  design: ["design", "logo", "figma", "brand", "ui", "ux", "illustrator", "photoshop", "identity", "graphics"],
+  writing: ["writing", "writer", "content", "copywriting", "blog", "article", "editing", "proofread"],
+  marketing: ["marketing", "seo", "social media", "ads", "campaign", "growth", "email marketing"],
+  "data entry": ["data entry", "excel", "spreadsheet", "typing", "copy paste", "admin", "virtual assistant"],
+  "customer support": ["customer support", "support", "chat", "email support", "customer service", "helpdesk"],
+  "video editing": ["video", "editing", "editor", "youtube", "reels", "premiere", "after effects"],
+  tutoring: ["tutor", "teaching", "teacher", "course", "lesson", "education", "training"],
+  translation: ["translation", "translator", "localization", "language", "transcription"],
+};
+
 const toArray = (value) => {
   if (Array.isArray(value)) {
     return value.filter(Boolean);
@@ -75,6 +96,247 @@ const toArray = (value) => {
 };
 
 const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const normalizeText = (value = "") => String(value || "").toLowerCase().trim();
+
+const normalizeToken = (value = "") => normalizeText(value).replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+
+const normalizeSource = (value = "") =>
+  normalizeText(value)
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/.*$/, "");
+
+const cleanPreferenceList = (values) => toArray(values).map(normalizeToken).filter(Boolean);
+
+const hasTextMatch = (haystack, values) => values.some((value) => value && haystack.includes(value));
+
+const getBudgetBounds = (job) => {
+  const min = Number(job?.budget?.min ?? job?.salary_range?.min);
+  const max = Number(job?.budget?.max ?? job?.salary_range?.max);
+
+  return {
+    min: Number.isFinite(min) ? min : null,
+    max: Number.isFinite(max) ? max : null,
+  };
+};
+
+const budgetMatchesPreference = (job, preferredBudget) => {
+  const range = preferenceBudgetRanges[preferredBudget];
+
+  if (!range || preferredBudget === "Any budget") {
+    return false;
+  }
+
+  const { min, max } = getBudgetBounds(job);
+
+  if (min === null && max === null) {
+    return false;
+  }
+
+  const jobMin = min ?? max;
+  const jobMax = max ?? min;
+
+  if (range.max && !range.min) {
+    return jobMin <= range.max || jobMax <= range.max;
+  }
+
+  if (range.min && !range.max) {
+    return jobMax >= range.min || jobMin >= range.min;
+  }
+
+  return jobMin <= range.max && jobMax >= range.min;
+};
+
+const workTypeMatchesPreference = (job, preferenceWorkTypes, haystack) => {
+  const location = normalizeToken(job?.location);
+
+  return cleanPreferenceList(preferenceWorkTypes).some((workType) => {
+    if (workType === "remote") {
+      return location.includes("remote") || location.includes("worldwide") || haystack.includes("remote");
+    }
+
+    if (workType === "hourly") {
+      return job?.budget?.is_hourly === true || haystack.includes("hourly") || haystack.includes("per hour");
+    }
+
+    if (workType === "fixed price" || workType === "fixed") {
+      return job?.budget?.is_hourly === false || haystack.includes("fixed price") || haystack.includes("fixed");
+    }
+
+    if (workType === "short term") {
+      return haystack.includes("short term") || haystack.includes("one time") || haystack.includes("quick");
+    }
+
+    if (workType === "long term") {
+      return haystack.includes("long term") || haystack.includes("ongoing") || haystack.includes("contract");
+    }
+
+    return haystack.includes(workType);
+  });
+};
+
+const sourceMatchesPreference = (jobSource, preferredSources) => {
+  const source = normalizeSource(jobSource);
+
+  return toArray(preferredSources).some((preferredSource) => {
+    const normalizedPreferred = normalizeSource(preferredSource);
+    return normalizedPreferred && (source.includes(normalizedPreferred) || normalizedPreferred.includes(source));
+  });
+};
+
+const isGigPreferencesIncomplete = (preferences = {}) => !(
+  preferences.onboardingCompleted &&
+  preferences.currentStatus &&
+  toArray(preferences.categories).length > 0 &&
+  toArray(preferences.skills).length > 0 &&
+  preferences.experienceLevel &&
+  toArray(preferences.workTypes).length > 0
+);
+
+const getPreferencesFromRequest = async (req) => {
+  const token = req.cookies?.accessToken || req.header("Authorization")?.replace("Bearer ", "");
+
+  if (!token) {
+    return null;
+  }
+
+  try {
+    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+    const user = await User.findById(decodedToken?._id).select("gigPreferences").lean();
+    return user?.gigPreferences || null;
+  } catch {
+    return null;
+  }
+};
+
+const withPreferenceMatch = (job, preferences) => {
+  if (!preferences) {
+    return {
+      ...job,
+      preferenceScore: 0,
+      preferenceTags: [],
+    };
+  }
+
+  const tags = [];
+  let score = 0;
+  const techStack = toArray(job.tech_stack);
+  const haystack = normalizeToken([
+    job.job_title,
+    job.company_name,
+    job.location,
+    job.experience,
+    job.min_requirements,
+    job.project_status,
+    techStack.join(" "),
+  ].join(" "));
+  const normalizedSkills = cleanPreferenceList(preferences.skills);
+  const normalizedTechStack = cleanPreferenceList(techStack);
+
+  const skillMatches = normalizedSkills.some((skill) =>
+    normalizedTechStack.some((tech) => tech.includes(skill) || skill.includes(tech)) ||
+    haystack.includes(skill)
+  );
+
+  if (skillMatches) {
+    score += 5;
+    tags.push("Skill match");
+  }
+
+  const categoryMatches = cleanPreferenceList(preferences.categories).some((category) => {
+    const keywords = categoryKeywords[category] || [category];
+    return hasTextMatch(haystack, keywords.map(normalizeToken));
+  });
+
+  if (categoryMatches) {
+    score += 3;
+    tags.push("Category match");
+  }
+
+  const workTypeMatches = workTypeMatchesPreference(job, preferences.workTypes, haystack);
+
+  if (workTypeMatches) {
+    score += 2;
+    tags.push("Work type match");
+  }
+
+  const preferredLocation = normalizeToken(preferences.location);
+  const jobLocation = normalizeToken(job.location);
+  const locationMatches = Boolean(
+    preferredLocation &&
+    (
+      jobLocation.includes(preferredLocation) ||
+      preferredLocation.includes(jobLocation) ||
+      (preferredLocation.includes("remote") && (jobLocation.includes("remote") || haystack.includes("remote")))
+    )
+  );
+
+  if (locationMatches) {
+    score += 2;
+    tags.push("Location match");
+  }
+
+  const budgetMatches = budgetMatchesPreference(job, preferences.preferredBudget);
+
+  if (budgetMatches) {
+    score += 2;
+    tags.push("Budget fit");
+  }
+
+  const preferredSourceMatches = sourceMatchesPreference(job.source_website, preferences.preferredSources);
+
+  if (preferredSourceMatches) {
+    score += 2;
+    tags.push("Preferred source");
+  }
+
+  const hasCoreMatch = skillMatches || categoryMatches;
+  const filledOptionalSignals = [
+    toArray(preferences.workTypes).length > 0,
+    Boolean(preferences.location),
+    Boolean(preferences.preferredBudget && preferences.preferredBudget !== "Any budget"),
+    toArray(preferences.preferredSources).length > 0,
+  ];
+  const matchedOptionalSignals = [
+    workTypeMatches,
+    locationMatches,
+    budgetMatches,
+    preferredSourceMatches,
+  ];
+  const requiredOptionalCount = filledOptionalSignals.filter(Boolean).length;
+  const matchedOptionalCount = matchedOptionalSignals.filter(Boolean).length;
+
+  if (hasCoreMatch && requiredOptionalCount > 0 && matchedOptionalCount === requiredOptionalCount) {
+    tags.unshift("Your profile matches");
+  } else if (hasCoreMatch && score >= 7) {
+    tags.unshift("Recommended for you");
+  }
+
+  return {
+    ...job,
+    preferenceScore: score,
+    preferenceTags: [...new Set(tags)],
+  };
+};
+
+const compareBySortOption = (sortBy) => {
+  if (sortBy === "budgetHigh") {
+    return (first, second) => (getBudgetBounds(second).max ?? getBudgetBounds(second).min ?? -1) - (getBudgetBounds(first).max ?? getBudgetBounds(first).min ?? -1);
+  }
+
+  if (sortBy === "budgetLow") {
+    return (first, second) => (getBudgetBounds(first).min ?? getBudgetBounds(first).max ?? Number.MAX_SAFE_INTEGER) - (getBudgetBounds(second).min ?? getBudgetBounds(second).max ?? Number.MAX_SAFE_INTEGER);
+  }
+
+  const dateField = sortBy === "discovered" ? "first_seen_at" : sortBy === "posted" ? "postedAt" : "new_until";
+
+  return (first, second) => {
+    const secondDate = new Date(second?.[dateField] || second?.postedAt || second?.createdAt || 0).getTime();
+    const firstDate = new Date(first?.[dateField] || first?.postedAt || first?.createdAt || 0).getTime();
+    return secondDate - firstDate;
+  };
+};
 
 const regexOr = (field, values) => {
   const cleanValues = toArray(values).map((value) => String(value).trim()).filter(Boolean);
@@ -223,6 +485,8 @@ const getAllJobs = asyncHandler(async(req, res) => {
     const pageSize = Math.max(Number(perPage) || 10, 1);
     const sortConditions = jobSortOptions[sortBy] || jobSortOptions.new;
     const andConditions = [activeJobConditions(now)];
+    const gigPreferences = await getPreferencesFromRequest(req);
+    const preferencesIncomplete = gigPreferences ? isGigPreferencesIncomplete(gigPreferences) : false;
     
     if (searchKeyword) {
       const searchRegex = { $regex: escapeRegex(searchKeyword), $options: "i" };
@@ -265,14 +529,34 @@ const getAllJobs = asyncHandler(async(req, res) => {
     const filterConditions = { $and: andConditions };
   
     try {
+      const totalJobs = await Job.countDocuments(filterConditions);
+
+      if (gigPreferences) {
+        const allJobs = await Job.find(filterConditions)
+          .sort(sortConditions)
+          .lean();
+        const sortComparator = compareBySortOption(sortBy);
+        const rankedJobs = allJobs
+          .map((job) => withPreferenceMatch(withComputedJobFlags(job, now), gigPreferences))
+          .sort((first, second) => (
+            second.preferenceScore - first.preferenceScore || sortComparator(first, second)
+          ));
+        const paginatedJobs = rankedJobs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+        return res.json({ data: paginatedJobs, totalJobs, preferencesIncomplete });
+      }
+
       const jobs = await Job.find(filterConditions)
         .sort(sortConditions)
         .skip((currentPage - 1) * pageSize)
         .limit(pageSize)
         .lean();
-  
-      const totalJobs = await Job.countDocuments(filterConditions);
-      res.json({ data: jobs.map((job) => withComputedJobFlags(job, now)), totalJobs });
+
+      return res.json({
+        data: jobs.map((job) => withPreferenceMatch(withComputedJobFlags(job, now), null)),
+        totalJobs,
+        preferencesIncomplete,
+      });
     } catch (error) {
       res.status(500).json({ error: "Server Error" });
     }

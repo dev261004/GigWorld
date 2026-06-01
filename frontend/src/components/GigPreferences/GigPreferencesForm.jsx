@@ -7,6 +7,7 @@ const emptyPreferences = {
   skills: [],
   experienceLevel: "",
   workTypes: [],
+  preferredSources: [],
   education: "",
   currentRole: "",
   workExperience: "",
@@ -24,6 +25,16 @@ const popularSkills = ["React", "Python", "Logo Design", "Figma", "Content Writi
 const experienceOptions = ["Beginner", "Intermediate", "Experienced", "Expert"];
 const workTypeOptions = ["Remote", "Part-time", "Full-time", "Fixed-price", "Hourly", "Short-term", "Long-term"];
 const budgetOptions = ["Any budget", "Under $100", "$100 - $500", "$500 - $1000", "$1000+"];
+const sourceOptions = [
+  { label: "Freelancer", value: "freelancer.com" },
+  { label: "Twine", value: "twine.net" },
+  { label: "RemoteOK", value: "remoteok.com" },
+  { label: "We Work Remotely", value: "weworkremotely.com" },
+  { label: "Remotive", value: "remotive.com" },
+  { label: "Truelancer", value: "truelancer.com" },
+  { label: "Hubstaff Talent", value: "talent.hubstaff.com" },
+  { label: "DesignCrowd", value: "designcrowd.com" },
+];
 
 const mergePreferences = (preferences = {}) => ({
   ...emptyPreferences,
@@ -31,6 +42,7 @@ const mergePreferences = (preferences = {}) => ({
   categories: Array.isArray(preferences.categories) ? preferences.categories : [],
   skills: Array.isArray(preferences.skills) ? preferences.skills : [],
   workTypes: Array.isArray(preferences.workTypes) ? preferences.workTypes : [],
+  preferredSources: Array.isArray(preferences.preferredSources) ? preferences.preferredSources : [],
   languages: Array.isArray(preferences.languages) ? preferences.languages : [],
   age: preferences.age || "",
 });
@@ -266,6 +278,33 @@ const GigPreferencesForm = ({ initialPreferences, isSaving = false, onCancel, on
                 isSelected={preferences.workTypes.includes(option)}
                 onClick={() => updateField("workTypes", toggleValue(preferences.workTypes, option))}
               />
+            ))}
+          </div>
+        </div>
+        <div className="lg:col-span-2">
+          <FieldLabel optional>Preferred source websites</FieldLabel>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">
+            Pick sources you trust most. Matching gigs can show a preferred source tag.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {sourceOptions.map((source) => (
+              <button
+                key={source.value}
+                type="button"
+                onClick={() => updateField("preferredSources", toggleValue(preferences.preferredSources, source.value))}
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-black transition ${
+                  preferences.preferredSources.includes(source.value)
+                    ? "border-blue-600 bg-blue-700 text-white shadow-sm shadow-blue-700/20"
+                    : "border-blue-200 bg-white text-slate-700 hover:border-blue-400 hover:text-blue-700"
+                }`}
+              >
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${source.value}&sz=64`}
+                  alt=""
+                  className="h-4 w-4 rounded-sm bg-white"
+                />
+                {source.label}
+              </button>
             ))}
           </div>
         </div>

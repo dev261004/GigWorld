@@ -181,6 +181,7 @@ const UserProfilePage = () => {
     { label: "Skills", value: formatPreferenceList(preferences.skills) },
     { label: "Experience", value: preferences.experienceLevel || "Not set" },
     { label: "Work type", value: formatPreferenceList(preferences.workTypes) },
+    { label: "Preferred sources", value: formatPreferenceList(preferences.preferredSources) },
     { label: "Budget", value: preferences.preferredBudget || "Not set" },
   ];
 

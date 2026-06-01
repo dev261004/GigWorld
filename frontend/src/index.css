@@ -135,6 +135,26 @@
   transform: scaleX(1);
 }
 
+.recommended-pill-motion {
+  position: relative;
+  isolation: isolate;
+  background:
+    linear-gradient(#ecfdf5, #ecfdf5) padding-box,
+    linear-gradient(120deg, #10b981, #38bdf8, #2563eb, #10b981) border-box;
+  background-size: 100% 100%, 220% 220%;
+  animation: recommended-pill-border 2.6s linear infinite;
+}
+
+@keyframes recommended-pill-border {
+  0% {
+    background-position: 0 0, 0% 50%;
+  }
+
+  100% {
+    background-position: 0 0, 220% 50%;
+  }
+}
+
 .shimmer-block {
   position: relative;
   overflow: hidden;

@@ -1,7 +1,9 @@
+/* eslint-disable react/prop-types */
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import Navbar from "../../components/Navbar/Navbar";
+import { parseGigBriefText } from "../../utils/gigBrief";
 
 const sourceCatalog = [
   { name: "Freelancer", domain: "freelancer.com" },
@@ -135,6 +137,53 @@ const formatValue = (value, fallback = "Not listed") => {
 
 const getTechStack = (job) => (Array.isArray(job?.tech_stack) ? job.tech_stack.filter(Boolean) : []);
 const minimumDetailShimmerMs = 550;
+
+const GigBriefContent = ({ text }) => {
+  const { meta, sections } = parseGigBriefText(text);
+
+  if (sections.length === 0 && meta.length === 0) {
+    return (
+      <p className="mt-5 text-base leading-8 text-slate-600">
+        The source did not provide a detailed description for this gig.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-5 grid gap-5">
+      {meta.length > 0 && (
+        <div className="grid gap-3 border-y border-blue-200 py-4 sm:grid-cols-3">
+          {meta.map((item) => (
+            <div key={`${item.label}-${item.value}`}>
+              <p className="text-xs font-black uppercase text-blue-700">{item.label}</p>
+              <p className="mt-1 text-sm font-bold text-slate-900">{item.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sections.map((section) => (
+        <article key={section.title} className="border-b border-blue-200 pb-5 last:border-b-0 last:pb-0">
+          <h3 className="text-lg font-black text-slate-950">{section.title}</h3>
+          <div className="mt-4 grid gap-3">
+            {section.items.map((item, index) => (
+              item.type === "bullet" ? (
+                <div key={`${section.title}-${index}`} className="flex gap-3 text-sm leading-7 text-slate-600">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
+                  <span>{item.text}</span>
+                </div>
+              ) : (
+                <p key={`${section.title}-${index}`} className="text-sm leading-7 text-slate-600">
+                  {item.text}
+                </p>
+              )
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  );
+};
 
 const renderDetailRow = (label, value) => (
   <div className="grid gap-1 py-3 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-5">
@@ -508,9 +557,7 @@ const GigDetailsPage = () => {
                 <section className="border-b border-blue-300 pb-10">
                   <p className="text-sm font-black uppercase text-blue-700">Full gig brief</p>
                   <h2 className="mt-2 text-3xl font-black text-slate-950">Requirements and scope</h2>
-                  <p className="mt-5 whitespace-pre-line text-base leading-8 text-slate-600">
-                    {job.min_requirements || "The source did not provide a detailed description for this gig."}
-                  </p>
+                  <GigBriefContent text={job.min_requirements} />
                 </section>
 
                 <section className="border-b border-blue-300 py-10">
