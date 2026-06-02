@@ -19,6 +19,7 @@ import SettingsPage from "./pages/SettingsPage/SettingsPage"
 import JobApplicationStatusPage from "./pages/JobApplicationStatusPage/JobApplicationStatusPage"
 import ProjectPage from "./pages/ProjectPage/ProjectPage"
 import PortfolioPage from "./pages/PortfolioPage/PortfolioPage"
+import NotFoundPage from "./pages/NotFoundPage/NotFoundPage"
 import CompanyForm from "./components/Company/CompanyForm"
 import CompanyList from "./components/Company/CompanyList"
 import { ToastProvider } from "./components/Toast/ToastProvider"
@@ -52,6 +53,7 @@ function App() {
     <Route path="/companies" element={<CompanyList />} />
         <Route path="/companies/new" element={<CompanyForm isEdit={false} />} />
         <Route path="/companies/:id/edit" element={<CompanyForm isEdit={true} />} />
+    <Route path="*" element={<NotFoundPage />} />
 
 
 
