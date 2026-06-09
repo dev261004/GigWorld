@@ -11,35 +11,75 @@ dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 const pythonBin = process.env.PYTHON_BIN || "python";
 const sixHoursMs = 6 * 60 * 60 * 1000;
 const intervalMs = Number(process.env.SCRAPER_INTERVAL_MS || sixHoursMs);
+const allowedFailures = Number(process.env.SCRAPER_ALLOWED_FAILURES || "1");
+const normalizeSourceKey = (value) => String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const disabledSources = new Set(
+  (process.env.SCRAPER_DISABLED_SOURCES || "")
+    .split(",")
+    .map((source) => normalizeSourceKey(source.trim()))
+    .filter(Boolean)
+);
 
 const scraperSources = [
   {
+    id: "freelancer",
     name: "Freelancer",
     script: "freelancer.py",
     args: ["--pages", process.env.FREELANCER_SYNC_PAGES || "3", "--delay", "5"],
   },
   {
+    id: "truelancer",
     name: "Truelancer",
     script: "truelancer.py",
     args: ["--pages", process.env.TRUELANCER_SYNC_PAGES || "3", "--delay", "5"],
   },
   {
+    id: "hubstaff",
     name: "Hubstaff Talent",
     script: "hubstaff.py",
     args: ["--pages", process.env.HUBSTAFF_SYNC_PAGES || "3", "--delay", "5"],
   },
-  { name: "Twine", script: "twine.py", args: [] },
   {
+    id: "guru",
+    name: "Guru",
+    script: "guru.py",
+    args: ["--pages", process.env.GURU_SYNC_PAGES || "3", "--delay", "5"],
+  },
+  { id: "twine", name: "Twine", script: "twine.py", args: [] },
+  {
+    id: "designcrowd",
     name: "DesignCrowd",
     script: "designcrowd.py",
     args: ["--pages", process.env.DESIGNCROWD_SYNC_PAGES || "3", "--delay", "5"],
   },
-  { name: "Remotive", script: "remotive.py", args: [] },
-  { name: "RemoteOK", script: "remoteok.py", args: [] },
-  { name: "We Work Remotely", script: "weworkremotely.py", args: [] },
+  { id: "remotive", name: "Remotive", script: "remotive.py", args: [] },
+  { id: "remoteok", name: "RemoteOK", script: "remoteok.py", args: [] },
+  { id: "weworkremotely", name: "We Work Remotely", script: "weworkremotely.py", args: [] },
 ];
 
 let running = false;
+
+const sourceKeys = ({ id, name, script }) => [
+  id,
+  name,
+  script,
+  script?.replace(/\.py$/i, ""),
+].map(normalizeSourceKey);
+
+const scraperSourcesToRun = scraperSources.filter(
+  (source) => !sourceKeys(source).some((key) => disabledSources.has(key))
+);
+
+if (disabledSources.size > 0) {
+  const skippedSources = scraperSources.filter(
+    (source) => sourceKeys(source).some((key) => disabledSources.has(key))
+  );
+  console.log(
+    `[scraper-worker] Disabled sources: ${
+      skippedSources.map((source) => source.name).join(", ") || "none matched"
+    }`
+  );
+}
 
 const runScraper = ({ name, script, args }) => new Promise((resolve) => {
   const commandArgs = [
@@ -85,7 +125,7 @@ const runAllScrapers = async () => {
 
   const results = [];
   try {
-    for (const source of scraperSources) {
+    for (const source of scraperSourcesToRun) {
       results.push(await runScraper(source));
     }
   } finally {
@@ -93,12 +133,22 @@ const runAllScrapers = async () => {
   }
 
   const failed = results.filter((result) => !result.ok);
+  const toleratedFailureCount = Number.isFinite(allowedFailures) && allowedFailures >= 0
+    ? Math.floor(allowedFailures)
+    : 1;
   console.log(
     `[scraper-worker] Scrape cycle complete. Success: ${
       results.length - failed.length
-    }, failed: ${failed.length}.`
+    }, failed: ${failed.length}, tolerated failures: ${toleratedFailureCount}.`
   );
-  return failed.length === 0;
+
+  if (failed.length > 0) {
+    console.error(
+      `[scraper-worker] Failed sources: ${failed.map((result) => result.name).join(", ")}`
+    );
+  }
+
+  return failed.length <= toleratedFailureCount;
 };
 
 if (process.argv.includes("--once")) {

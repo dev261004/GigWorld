@@ -5,6 +5,8 @@ import json
 import os
 import random
 import re
+import shutil
+import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -100,10 +102,61 @@ def build_page_url(page_number: int, start_url: str) -> str:
 
 
 def fetch_page(session: requests.Session, url: str, timeout: int) -> str:
-    response = session.get(url, timeout=timeout)
-    response.raise_for_status()
-    response.encoding = "utf-8"
-    return response.text
+    try:
+        response = session.get(url, timeout=timeout)
+        response.raise_for_status()
+        response.encoding = "utf-8"
+        return response.text
+    except requests.HTTPError as exc:
+        status_code = exc.response.status_code if exc.response is not None else None
+        if status_code != 403:
+            raise
+
+        print(
+            f"DesignCrowd returned 403 for Python requests; retrying with curl: {url}",
+            file=sys.stderr,
+        )
+        return fetch_page_with_curl(
+            url,
+            timeout,
+            session.headers.get("User-Agent", DEFAULT_USER_AGENT),
+        )
+
+
+def fetch_page_with_curl(url: str, timeout: int, user_agent: str) -> str:
+    curl_bin = shutil.which("curl") or shutil.which("curl.exe")
+    if not curl_bin:
+        raise RuntimeError("curl fallback is unavailable on this system.")
+
+    command = [
+        curl_bin,
+        "-L",
+        "--fail",
+        "--silent",
+        "--show-error",
+        "--max-time",
+        str(timeout),
+        "-A",
+        user_agent,
+        "-H",
+        "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "-H",
+        "Accept-Language: en-US,en;q=0.9",
+        url,
+    ]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout + 5,
+        check=False,
+    )
+    if result.returncode != 0:
+        error = clean_text(result.stderr) or f"curl exited with code {result.returncode}"
+        raise RuntimeError(f"curl fallback failed for {url}: {error}")
+    return result.stdout
 
 
 def parse_int(value: object) -> int | None:

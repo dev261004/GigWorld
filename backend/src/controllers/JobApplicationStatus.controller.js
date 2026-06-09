@@ -23,6 +23,7 @@ const normalizeStatus = (status) => (
 );
 
 const escapeRegex = (value = "") => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const isHiddenSource = (source = "") => /designcrowd/i.test(String(source));
 
 const normalizePositiveInt = (value, fallback, max = 100) => {
   const parsedValue = Number.parseInt(value, 10);
@@ -241,7 +242,9 @@ const getUserJobApplications = async (req, res) => {
       success: true,
       data: applications,
       statuses: applicationStatuses,
-      sourceOptions: sourceOptions.map((sourceOption) => sourceOption._id),
+      sourceOptions: sourceOptions
+        .map((sourceOption) => sourceOption._id)
+        .filter((sourceOption) => !isHiddenSource(sourceOption)),
       totalApplications,
       currentPage: page,
       perPage,

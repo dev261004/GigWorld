@@ -20,7 +20,7 @@ const sourceSites = [
   { name: "Remotive", domain: "remotive.com" },
   { name: "Truelancer", domain: "truelancer.com" },
   { name: "Hubstaff", domain: "hubstafftalent.net" },
-  { name: "DesignCrowd", domain: "designcrowd.com" },
+  { name: "Guru", domain: "guru.com" },
 ];
 
 const passwordRequirements = [

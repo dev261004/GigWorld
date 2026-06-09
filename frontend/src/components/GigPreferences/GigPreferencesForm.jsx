@@ -33,7 +33,7 @@ const sourceOptions = [
   { label: "Remotive", value: "remotive.com" },
   { label: "Truelancer", value: "truelancer.com" },
   { label: "Hubstaff Talent", value: "talent.hubstaff.com" },
-  { label: "DesignCrowd", value: "designcrowd.com" },
+  { label: "Guru", value: "guru.com" },
 ];
 
 const mergePreferences = (preferences = {}) => ({

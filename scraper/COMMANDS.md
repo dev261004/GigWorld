@@ -64,6 +64,7 @@ Purpose:
 - Keeps scraping working even when your local PC is shut down.
 - Uses the same lifecycle sync logic as the local worker.
 - Does not change local scraping commands.
+- Skips DesignCrowd in GitHub Actions through `SCRAPER_DISABLED_SOURCES=designcrowd`.
 
 Required GitHub repository secret:
 
@@ -113,6 +114,7 @@ You can replace `remotive.py` with any scraper file, for example:
 python scraper\remoteok.py --limit 5 --dry-run
 python scraper\weworkremotely.py --limit 5 --dry-run
 python scraper\twine.py --limit 5 --dry-run
+python scraper\guru.py --limit 5 --dry-run
 ```
 
 ## Run One Source With Lifecycle Sync

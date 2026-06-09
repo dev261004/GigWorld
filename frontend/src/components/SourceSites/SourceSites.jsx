@@ -6,7 +6,7 @@ const sourceSites = [
   { name: "Remotive", domain: "remotive.com" },
   { name: "Truelancer", domain: "truelancer.com" },
   { name: "Hubstaff Talent", domain: "talent.hubstaff.com" },
-  { name: "DesignCrowd", domain: "designcrowd.com" },
+  { name: "Guru", domain: "guru.com" },
 ];
 
 const SourceSites = () => {

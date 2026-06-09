@@ -10,6 +10,13 @@ const activeJobConditions = (now = new Date()) => ({
   $and: [
     {
       $or: [
+        { source_website: { $exists: false } },
+        { source_website: null },
+        { source_website: { $not: /designcrowd/i } },
+      ],
+    },
+    {
+      $or: [
         { expires_at: { $exists: false } },
         { expires_at: null },
         { expires_at: { $gt: now } },
@@ -30,9 +37,12 @@ const withComputedJobFlags = (job, now = new Date()) => ({
   is_new: Boolean(job.new_until && new Date(job.new_until) > now),
 });
 
+const isHiddenSource = (source = "") => /designcrowd/i.test(String(source));
+
 const isJobUnavailable = (job, now = new Date()) => (
   !job ||
   job.is_active === false ||
+  isHiddenSource(job.source_website) ||
   (job.expires_at && new Date(job.expires_at) <= now) ||
   (job.application_deadline && new Date(job.application_deadline) <= now)
 );

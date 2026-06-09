@@ -32,7 +32,7 @@ const sourceCatalog = [
   { name: "Remotive", domain: "remotive.com" },
   { name: "Truelancer", domain: "truelancer.com" },
   { name: "Hubstaff Talent", domain: "talent.hubstaff.com" },
-  { name: "DesignCrowd", domain: "designcrowd.com" },
+  { name: "Guru", domain: "guru.com" },
 ];
 
 const defaultSkills = ["React", "Node.js", "Python", "AI", "MongoDB", "AWS"];

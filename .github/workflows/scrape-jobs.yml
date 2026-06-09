@@ -22,6 +22,7 @@ jobs:
       MONGODB_URL: ${{ secrets.MONGODB_URL }}
       DB_NAME: ${{ secrets.DB_NAME }}
       PYTHON_BIN: python
+      SCRAPER_DISABLED_SOURCES: designcrowd
 
     steps:
       - name: Checkout repository
