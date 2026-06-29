@@ -1,259 +1,182 @@
+<div align="center">
+  <img src="https://via.placeholder.com/150x150.png?text=GigWorld+Logo" alt="GigWorld Logo" width="150" height="150" />
+  
+  # 🌍 GigWorld
+  
+  **Your One-Stop Destination for Freelancers**
 
-# "GigWorld - Your One-Stop Destination for Freelancers"
+  [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
+  [![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+  [![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+  [![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 
-GigWorld is a comprehensive platform tailored for freelancers seeking work opportunities. This project aggregates freelancing job listings scraped from multiple popular freelancing websites, providing a centralized and efficient job-search solution. With its user-friendly interface and powerful backend, GigWorld ensures freelancers can access a wide range of gigs in one place.
+</div>
 
-## Table of Contents
+---
 
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Project Setup](#project-setup)
-  - [Folder Structure](#folder-structure)
-  - [Setting Up a Virtual Environment for Web Scraping](#setting-up-a-virtual-environment-for-web-scraping)
-- [API Documentation](#api-documentation)
-  - [Authentication](#authentication)
-    - [Register a New User](#register-a-new-user)
-    - [Login User](#login-user)
-  - [User Profile](#user-profile)
-    - [Get User Profile](#get-user-profile)
-  - [Jobs](#jobs)
-    - [Get All Jobs](#get-all-jobs)
-    - [Create a Job Post](#create-a-job-post)
-- [Contributing](#contributing)
-- [License](#license)
+GigWorld is a comprehensive job aggregation platform tailored for freelancers seeking work opportunities. This project scrapes freelancing job listings from multiple popular websites and presents them in a unified, user-friendly interface. It also enables companies to post job openings directly, creating a hybrid marketplace where freelancers can browse both aggregated and direct opportunities.
 
-## Features
+## 📑 Table of Contents
 
-- Aggregates job listings from multiple freelancing websites.
-- Companies can post job openings.
-- Freelancers can browse and apply for jobs.
-- User profiles for both freelancers and companies.
-- Simple, user-friendly interface.
+- [✨ Features](#-features)
+- [🛠️ Tech Stack](#️-tech-stack)
+- [🏗️ System Architecture](#️-system-architecture)
+- [🚀 Getting Started](#-getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [📚 API Documentation](#-api-documentation)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
-## Technologies Used
+---
 
-- **Frontend:** React.js
-- **Backend:** Node.js, Express.js
-- **Database:** MongoDB (using Mongoose for ORM)
-- **Web Scraping:** Selenium
-- **Authentication:** JSON Web Tokens (JWT), bcrypt
-- **Cloudinary:** For user avatar and other media uploads
-- **Other Tools:** Socket.io for real-time communications
+## ✨ Features
 
-## Project Setup
+- **Multi-source Job Aggregation:** Automatically scrapes and deduplicates listings from 8+ major platforms (Upwork, Freelancer, Remote.ok, etc.).
+- **Direct Job Posting:** Companies can register and post jobs directly to the platform.
+- **Unified Freelancer Dashboard:** Browse, filter, and apply for jobs all in one place.
+- **Job Lifecycle Tracking:** Automatically tracks job status (new → active → expired) to keep listings fresh.
+- **Real-time Updates:** Get live notifications and updates via Socket.io.
+- **Robust Authentication:** Secure JWT-based authentication and Google OAuth 2.0 integration.
 
-### Folder Structure
+---
 
+## 🛠️ Tech Stack
+
+**Frontend:**
+- React.js 18 (Vite)
+- Tailwind CSS 3.4
+- React Router v6
+- Axios & Boxicons
+
+**Backend:**
+- Node.js & Express.js
+- MongoDB & Mongoose ORM
+- Socket.io (Real-time)
+- JWT & bcrypt (Auth)
+- Nodemailer & Multer
+
+**Scraper:**
+- Python 3
+- BeautifulSoup4 & Requests
+- PyMongo
+- Scheduled Workers
+
+---
+
+## 🏗️ System Architecture
+
+The system operates in a hybrid micro-architecture where background Python scripts perform scheduled scraping from external sources, populating the central MongoDB database. The Node.js Express backend serves this data via REST API to the React frontend while handling real-time features and direct user interactions.
+
+```mermaid
+graph LR
+    A[Python Scrapers] -->|Upsert Data| B[(MongoDB)]
+    C[Express Backend] <-->|Read/Write| B
+    D[React Frontend] <-->|REST / Socket.io| C
+    E[External Platforms] -->|Scraped by| A
 ```
-workhive/
-│
-├── backend/
-│   ├── controllers/
-│   ├── models/
-│   ├── routes/
-│   ├── app.js
-│   └── server.js
-│
-├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── App.js
-│   └── package.json
-│
-└── README.md
-```
 
-### Setting Up a Virtual Environment for Web Scraping
+---
 
-To set up a Python virtual environment for web scraping with Selenium, follow these steps:
+## 🚀 Getting Started
 
-1. Install `virtualenv` if you haven't already:
+Follow these instructions to set up the project locally for development and testing.
 
+### Prerequisites
+
+Ensure you have the following installed:
+- [Node.js](https://nodejs.org/) (v16+)
+- [Python](https://www.python.org/) (v3.8+)
+- [MongoDB](https://www.mongodb.com/) (Local or Atlas URL)
+
+### Installation
+
+1. **Clone the repository:**
    ```bash
-   pip install virtualenv
+   git clone https://github.com/dev261004/GigWorld.git
+   cd GigWorld
    ```
 
-2. Create a virtual environment:
-
+2. **Backend Setup:**
    ```bash
-   virtualenv venv
+   cd backend
+   npm install
+   ```
+   *Create a `.env` file in the `backend/` directory (see [Environment Variables](#environment-variables)).*
+   ```bash
+   npm run dev
    ```
 
-3. Activate the virtual environment:
-
-   - **Windows**:
-
-     ```bash
-     .\venv\Scripts\activate
-     ```
-
-   - **MacOS/Linux**:
-
-     ```bash
-     source venv/bin/activate
-     ```
-
-4. Install required packages:
-
+3. **Frontend Setup:**
    ```bash
-   pip install selenium
+   cd ../frontend
+   npm install
+   ```
+   *Create a `.env` file in the `frontend/` directory with `VITE_API_URL=http://localhost:5000/api/v1`.*
+   ```bash
+   npm run dev
    ```
 
-5. Once your virtual environment is active, you can run your web scraping scripts within it. To deactivate the environment when you're done:
-
+4. **Scraper Setup:**
    ```bash
-   deactivate
+   cd ../scraper
+   pip install -r requirements.txt
+   ```
+   *Create a `.env` file with `MONGODB_URI`.*
+   ```bash
+   python freelancer.py  # To run a specific scraper manually
    ```
 
-## API Documentation
+### Environment Variables
 
-### Authentication
+You will need the following environment variables in your `backend/.env` file:
 
-#### Register a New User
-
-**Endpoint**: `POST /api/users/register`
-
-**Request Body**:
-
-```json
-{
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "securepassword"
-}
+```env
+MONGODB_URI=mongodb://localhost:27017/gigworld
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRY=7d
+GOOGLE_CLIENT_ID=your_client_id
+GOOGLE_CLIENT_SECRET=your_client_secret
+PORT=5000
+NODE_ENV=development
 ```
 
-**Response**:
+---
 
-```json
-{
-  "_id": "60d0fe4f5311236168a109ca",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "token": "jwt_token"
-}
-```
+## 📚 API Documentation
 
-#### Login User
+Here is a quick overview of the core REST endpoints available in the backend API.
 
-**Endpoint**: `POST /api/users/login`
+| Endpoint | Method | Description | Auth Required |
+|----------|--------|-------------|---------------|
+| `/api/v1/users/register` | `POST` | Register a new user (Freelancer/Company) | No |
+| `/api/v1/users/login` | `POST` | Authenticate user and get JWT | No |
+| `/api/v1/jobs` | `GET` | Get a paginated list of all active jobs | No |
+| `/api/v1/jobs` | `POST` | Create a new job post | Yes (Company) |
+| `/api/v1/jobs/:jobId/apply` | `POST` | Apply for a specific job | Yes (Freelancer) |
+| `/api/v1/users/profile` | `GET` | Get current user's profile | Yes |
 
-**Request Body**:
+*For full Request/Response schemas, refer to the [Detailed API Docs](PROJECT_OVERVIEW.md).*
 
-```json
-{
-  "email": "john@example.com",
-  "password": "securepassword"
-}
-```
+---
 
-**Response**:
+## 🤝 Contributing
 
-```json
-{
-  "_id": "60d0fe4f5311236168a109ca",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "token": "jwt_token"
-}
-```
+Contributions make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
-### User Profile
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-#### Get User Profile
+---
 
-**Endpoint**: `GET /api/users/profile/:id`
+## 📄 License
 
-**Response**:
+This project is distributed under the MIT License. See the [LICENSE](LICENSE) file for more information.
 
-```json
-{
-  "_id": "60d0fe4f5311236168a109ca",
-  "name": "John Doe",
-  "email": "john@example.com",
-  "bio": "Freelance developer specializing in MERN stack",
-  "skills": ["JavaScript", "React", "Node.js"],
-  "avatar": "http://example.com/avatar.jpg",
-  "createdAt": "2023-09-13T12:00:00Z",
-  "updatedAt": "2023-09-13T12:00:00Z"
-}
-```
-
-### Jobs
-
-#### Get All Jobs
-
-**Endpoint**: `GET /api/jobs`
-
-**Response**:
-
-```json
-[
-  {
-    "_id": "60d0fe4f5311236168a109ca",
-    "title": "Full-Stack Developer",
-    "company": "TechCorp",
-    "location": "Remote",
-    "description": "Looking for a full-stack developer with experience in MERN stack...",
-    "salaryRange": "60,000-80,000",
-    "applicationDeadline": "2023-10-01"
-  },
-  {
-    "_id": "60d0fe4f5311236168a109cb",
-    "title": "UI/UX Designer",
-    "company": "DesignHub",
-    "location": "New York, NY",
-    "description": "We are looking for a creative UI/UX designer...",
-    "salaryRange": "50,000-70,000",
-    "applicationDeadline": "2023-09-30"
-  }
-]
-```
-
-#### Create a Job Post
-
-**Endpoint**: `POST /api/jobs`
-
-**Request Body**:
-
-```json
-{
-  "title": "Backend Developer",
-  "company": "DevHub",
-  "location": "Remote",
-  "description": "We need a backend developer with experience in Node.js...",
-  "salaryRange": "70,000-90,000",
-  "applicationDeadline": "2023-11-01"
-}
-```
-
-**Response**:
-
-```json
-{
-  "_id": "60d0fe4f5311236168a109cc",
-  "title": "Backend Developer",
-  "company": "DevHub",
-  "location": "Remote",
-  "description": "We need a backend developer with experience in Node.js...",
-  "salaryRange": "70,000-90,000",
-  "applicationDeadline": "2023-11-01",
-  "createdAt": "2023-09-13T12:00:00Z"
-}
-```
-
-## Contributing
-
-We welcome contributions! Please follow these steps to contribute:
-
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Make your changes and commit them (`git commit -m 'Add some feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Open a pull request.
-
-## License
-
-Distributed under the MIT License. See `LICENSE` for more information.
+<div align="center">
+  <b>Built with ❤️ by <a href="https://github.com/dev261004">Dev Agrawal</a></b>
+</div>
